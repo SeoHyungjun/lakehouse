@@ -1,0 +1,70 @@
+# MinIO Configuration - Staging Environment
+
+# Deployment mode: standalone (can be upgraded to distributed)
+mode: standalone
+
+# Number of replicas
+replicas: 1
+
+# Persistence configuration
+persistence:
+  enabled: true
+  size: 50Gi
+  storageClass: ""  # Use cluster default or specify: "fast-ssd"
+
+# Resource allocation (moderate for staging)
+resources:
+  requests:
+    memory: 1Gi
+    cpu: 500m
+  limits:
+    memory: 2Gi
+    cpu: 1000m
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 9000
+  consolePort: 9001
+
+# Root credentials (should be injected via secrets)
+# Use Kubernetes secrets or environment variables in production
+rootUser: admin
+rootPassword: staging-minio-password-456
+
+# Buckets to create automatically
+buckets:
+  - name: lakehouse-staging-raw
+    policy: none
+    purge: false
+  - name: lakehouse-staging-warehouse
+    policy: none
+    purge: false
+  - name: lakehouse-staging-temp
+    policy: none
+    purge: false
+
+# Security context
+securityContext:
+  enabled: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Ingress (can be enabled if needed)
+ingress:
+  enabled: false
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - minio-staging.example.com
+  tls: []
+
+# Metrics (enabled for staging)
+metrics:
+  serviceMonitor:
+    enabled: true
+
+# Console ingress (optional)
+consoleIngress:
+  enabled: false

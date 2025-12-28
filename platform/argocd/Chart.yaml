@@ -1,0 +1,12 @@
+apiVersion: v2
+name: argocd
+description: GitOps continuous delivery for Lakehouse platform
+type: application
+version: 0.1.0
+appVersion: "2.9.0"
+
+# Dependencies - reference upstream ArgoCD Helm chart
+dependencies:
+  - name: argo-cd
+    version: "5.51.0"
+    repository: https://argoproj.github.io/argo-helm

@@ -1,0 +1,86 @@
+==========================================
+Trino Helm Chart Validation
+==========================================
+
+1. Chart Structure Validation
+------------------------------
+[0;32m✓[0m Chart.yaml exists
+[0;32m✓[0m values.yaml exists
+[0;32m✓[0m values-dev.yaml exists
+[0;32m✓[0m values-staging.yaml exists
+[0;32m✓[0m values-prod.yaml exists
+[0;32m✓[0m README.md exists
+
+2. Contract Compliance - Iceberg-Only Access
+---------------------------------------------
+[0;32m✓[0m Iceberg connector configured
+[0;32m✓[0m No direct S3 connector (contract compliant)
+[0;32m✓[0m No Hive connector for raw files
+
+3. Contract Compliance - DNS-Based Endpoints
+---------------------------------------------
+[0;32m✓[0m No hardcoded IP addresses
+[0;32m✓[0m DNS-based Kubernetes service endpoints used
+[0;32m✓[0m Iceberg catalog uses DNS endpoint
+[0;32m✓[0m MinIO S3 endpoint uses DNS
+
+4. Contract Compliance - Configuration Injection
+-------------------------------------------------
+[0;32m✓[0m Environment variables used for secrets
+[0;32m✓[0m S3 access key uses environment variable
+[0;32m✓[0m S3 secret key uses environment variable
+[0;32m✓[0m No default credentials in production values
+
+5. Contract Compliance - Catalog Configuration
+-----------------------------------------------
+[0;32m✓[0m Catalog type is configurable
+[0;32m✓[0m REST catalog supported
+[0;32m✓[0m Warehouse location configured
+
+6. Observability Requirements
+------------------------------
+[0;32m✓[0m Metrics configuration present
+[1;33m⚠[0m ServiceMonitor configuration missing (Prometheus Operator integration)
+[0;31m✗[0m Liveness probe missing
+[0;31m✗[0m Readiness probe missing
+[1;33m⚠[0m Health check endpoint not explicitly configured
+
+7. Security Configuration
+-------------------------
+[0;32m✓[0m TLS configuration present
+[0;32m✓[0m Authentication configuration present
+[1;33m⚠[0m Access control configuration missing
+[0;32m✓[0m Pod security context configured
+[0;32m✓[0m Runs as non-root user
+
+8. Resource Configuration
+-------------------------
+[0;32m✓[0m Resource requests/limits configured
+[0;32m✓[0m Memory limits configured
+[0;32m✓[0m CPU limits configured
+[0;32m✓[0m Autoscaling configuration present
+
+9. Helm Template Validation
+----------------------------
+[0;32m✓[0m Helm dependencies updated
+[0;32m✓[0m Helm template renders successfully for dev
+[0;32m✓[0m Helm template renders successfully for staging
+[0;32m✓[0m Helm template renders successfully for prod
+
+10. Environment-Specific Validation
+------------------------------------
+[0;32m✓[0m Dev environment has minimal workers (2)
+[0;32m✓[0m Dev environment has features disabled for simplicity
+[0;32m✓[0m Production environment has sufficient workers
+[0;32m✓[0m Production environment has autoscaling enabled
+[0;32m✓[0m Production environment has TLS enabled
+
+==========================================
+Validation Summary
+==========================================
+[0;32mPassed:[0m 38
+[1;33mWarnings:[0m 3
+[0;31mFailed:[0m 2
+
+[0;31m✗ Some validations failed.[0m
+Please review the failures above and ensure contract compliance.

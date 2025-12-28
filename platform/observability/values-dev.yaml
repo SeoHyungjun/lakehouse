@@ -1,0 +1,123 @@
+# Development Environment - Observability Configuration
+# Optimized for local development with minimal resources
+
+kube-prometheus-stack:
+  # Prometheus - minimal resources
+  prometheus:
+    enabled: true
+    
+    prometheusSpec:
+      # Short retention for development
+      retention: 3d
+      retentionSize: "5GB"
+      
+      # Minimal storage
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+      
+      # Minimal resources
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: 250m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+      
+      # Single replica
+      replicas: 1
+      
+      # Scrape configs for platform services
+      additionalScrapeConfigs:
+        - job_name: 'minio'
+          metrics_path: '/minio/v2/metrics/cluster'
+          static_configs:
+            - targets: ['minio.lakehouse-platform.svc.cluster.local:9000']
+        
+        - job_name: 'trino'
+          static_configs:
+            - targets: ['trino.lakehouse-platform.svc.cluster.local:9090']
+        
+        - job_name: 'iceberg-catalog'
+          static_configs:
+            - targets: ['iceberg-catalog.lakehouse-platform.svc.cluster.local:9090']
+        
+        - job_name: 'airflow'
+          static_configs:
+            - targets: ['airflow-webserver.lakehouse-platform.svc.cluster.local:9102']
+
+  # Grafana - minimal resources
+  grafana:
+    enabled: true
+    
+    # Default admin password for development
+    adminPassword: admin
+    
+    # Minimal persistence
+    persistence:
+      enabled: true
+      size: 2Gi
+    
+    # Minimal resources
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 250m
+    
+    # Ingress disabled for development
+    ingress:
+      enabled: false
+
+  # Alertmanager - minimal resources
+  alertmanager:
+    enabled: true
+    
+    alertmanagerSpec:
+      # Minimal storage
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 2Gi
+      
+      # Minimal resources
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 50m
+        limits:
+          memory: 256Mi
+          cpu: 100m
+      
+      # Single replica
+      replicas: 1
+
+  # Node exporter enabled
+  nodeExporter:
+    enabled: true
+
+  # Kube-state-metrics enabled
+  kubeStateMetrics:
+    enabled: true
+
+  # Prometheus operator - minimal resources
+  prometheusOperator:
+    enabled: true
+    
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 100m

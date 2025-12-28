@@ -1,0 +1,146 @@
+# Staging Environment - Airflow Configuration
+# Pre-production testing with moderate resources
+
+airflow:
+  # Executor
+  executor: "KubernetesExecutor"
+
+  # Webserver - moderate resources
+  webserver:
+    replicas: 2
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    # Authentication enabled for staging
+    defaultUser:
+      enabled: true
+      role: Admin
+      username: admin
+      email: admin@staging.example.com
+      firstName: Admin
+      lastName: User
+      password: CHANGE_ME_STAGING
+
+  # Scheduler - moderate resources with HA
+  scheduler:
+    replicas: 2
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+
+  # PostgreSQL - moderate resources
+  postgresql:
+    enabled: true
+    auth:
+      username: airflow
+      password: CHANGE_ME_STAGING
+      database: airflow
+    primary:
+      persistence:
+        enabled: true
+        size: 20Gi
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: 250m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+
+  # Redis - disabled for KubernetesExecutor
+  redis:
+    enabled: false
+
+  # DAGs - moderate persistence with GitSync
+  dags:
+    persistence:
+      enabled: true
+      size: 5Gi
+    
+    # GitSync enabled for staging
+    gitSync:
+      enabled: true
+      repo: "https://github.com/your-org/lakehouse-workflows.git"
+      branch: staging
+      subPath: "workflows/"
+      wait: 60
+      maxFailures: 3
+
+  # Airflow configuration - staging settings
+  config:
+    core:
+      dags_folder: "/opt/airflow/dags"
+      load_examples: "False"
+      parallelism: 32
+      max_active_tasks_per_dag: 16
+      max_active_runs_per_dag: 8
+    
+    webserver:
+      expose_config: "True"
+      rbac: "True"
+      authenticate: "True"
+      auth_backend: "airflow.api.auth.backend.basic_auth"
+    
+    api:
+      auth_backends: "airflow.api.auth.backend.basic_auth"
+    
+    kubernetes:
+      namespace: lakehouse-platform
+      delete_worker_pods: "True"
+      delete_worker_pods_on_failure: "False"
+      worker_pods_creation_batch_size: 5
+    
+    logging:
+      logging_level: "INFO"
+      remote_logging: "False"
+
+  # Metrics - enabled for staging
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+      labels:
+        environment: staging
+
+  # Ingress - enabled for staging
+  ingress:
+    enabled: true
+    web:
+      enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-staging
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      hosts:
+        - name: airflow-staging.example.com
+          tls:
+            enabled: true
+            secretName: airflow-staging-tls
+
+  # Triggerer - enabled for staging
+  triggerer:
+    enabled: true
+    replicas: 1
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 200m
+
+  # Pod annotations for metrics
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9102"

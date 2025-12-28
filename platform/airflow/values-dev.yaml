@@ -1,0 +1,107 @@
+# Development Environment - Airflow Configuration
+# Optimized for local development with minimal resources
+
+airflow:
+  # Executor
+  executor: "KubernetesExecutor"
+
+  # Webserver - minimal resources
+  webserver:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 250m
+    
+    # Default admin user for development
+    defaultUser:
+      enabled: true
+      role: Admin
+      username: admin
+      email: admin@localhost
+      firstName: Admin
+      lastName: User
+      password: admin
+
+  # Scheduler - minimal resources
+  scheduler:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 250m
+
+  # PostgreSQL - minimal resources
+  postgresql:
+    enabled: true
+    auth:
+      username: airflow
+      password: airflow
+      database: airflow
+    primary:
+      persistence:
+        enabled: true
+        size: 2Gi
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 250m
+
+  # Redis - disabled for KubernetesExecutor
+  redis:
+    enabled: false
+
+  # DAGs - minimal persistence
+  dags:
+    persistence:
+      enabled: true
+      size: 1Gi
+    
+    # GitSync disabled for development (use local DAGs)
+    gitSync:
+      enabled: false
+
+  # Airflow configuration - development settings
+  config:
+    core:
+      dags_folder: "/opt/airflow/dags"
+      load_examples: "False"
+      parallelism: 8
+      max_active_tasks_per_dag: 4
+      max_active_runs_per_dag: 4
+    
+    webserver:
+      expose_config: "True"
+      rbac: "False"
+      authenticate: "False"
+    
+    kubernetes:
+      namespace: lakehouse-platform
+      delete_worker_pods: "True"
+      delete_worker_pods_on_failure: "False"
+    
+    logging:
+      logging_level: "DEBUG"
+
+  # Metrics - disabled for development
+  metrics:
+    enabled: false
+
+  # Ingress - disabled for development
+  ingress:
+    enabled: false
+
+  # Triggerer - disabled for development
+  triggerer:
+    enabled: false

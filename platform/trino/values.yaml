@@ -1,0 +1,183 @@
+# Trino Helm Chart Values
+# Default configuration for Trino query engine
+# Override with environment-specific values files
+
+# Global settings
+global:
+  namespace: lakehouse-platform
+
+# Trino subchart configuration
+# All values are passed to the upstream Trino Helm chart
+trino:
+  # Trino image configuration
+  image:
+    repository: trinodb/trino
+    tag: "440"
+    pullPolicy: IfNotPresent
+
+  # Server configuration
+  server:
+    workers: 2
+    
+    # Coordinator configuration
+    coordinator:
+      jvm:
+        maxHeapSize: "4G"
+        gcMethod:
+          type: "UseG1GC"
+          g1:
+            heapRegionSize: "32M"
+      
+      config:
+        general:
+          query.max-memory: "4GB"
+          query.max-memory-per-node: "1GB"
+          query.max-total-memory-per-node: "2GB"
+        
+        # Additional coordinator-specific settings
+        http-server.http.port: 8080
+        discovery.uri: http://localhost:8080
+      
+      resources:
+        requests:
+          memory: 4Gi
+          cpu: 1000m
+        limits:
+          memory: 8Gi
+          cpu: 2000m
+      
+      # Node labels and affinity
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+    
+    # Worker configuration
+    worker:
+      jvm:
+        maxHeapSize: "4G"
+        gcMethod:
+          type: "UseG1GC"
+          g1:
+            heapRegionSize: "32M"
+      
+      config:
+        general:
+          query.max-memory-per-node: "2GB"
+          query.max-total-memory-per-node: "3GB"
+      
+      resources:
+        requests:
+          memory: 4Gi
+          cpu: 1000m
+        limits:
+          memory: 8Gi
+          cpu: 2000m
+      
+      # Autoscaling for workers
+      autoscaling:
+        enabled: false
+        minReplicas: 2
+        maxReplicas: 10
+        targetCPUUtilizationPercentage: 70
+      
+      # Node labels and affinity
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # Catalogs configuration
+  # Reference: contracts/query-engine.md section 5
+  additionalCatalogs:
+    # Iceberg catalog - primary data access interface
+    iceberg: |
+      connector.name=iceberg
+      iceberg.catalog.type=rest
+      iceberg.rest.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
+      iceberg.rest.warehouse=s3://lakehouse-dev-warehouse/
+      
+      # S3 configuration (references object-storage contract)
+      fs.native-s3.enabled=true
+      s3.endpoint=http://minio.lakehouse-platform.svc.cluster.local:9000
+      s3.path-style-access=true
+      s3.aws-access-key=${ENV:S3_ACCESS_KEY}
+      s3.aws-secret-key=${ENV:S3_SECRET_KEY}
+
+  # Environment variables for catalog configuration
+  env:
+    - name: S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: trino-s3-credentials
+          key: accessKeyId
+    - name: S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: trino-s3-credentials
+          key: secretAccessKey
+
+  # Authentication configuration
+  auth:
+    enabled: false
+    # Supported types: PASSWORD, LDAP, OAUTH2
+    type: ""
+
+  # Security configuration
+  security:
+    # TLS/HTTPS configuration
+    tls:
+      enabled: false
+      port: 8443
+
+  # Ingress configuration
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: trino.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  # Metrics and observability
+  metrics:
+    enabled: false
+    port: 9090
+
+  # Pod annotations
+  podAnnotations: {}
+
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+  # Container security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+
+  # Service account
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+# Secrets to be created
+# These are used to populate the trino-s3-credentials secret
+secrets:
+  s3:
+    # S3 credentials for Iceberg catalog
+    # These should be overridden in environment-specific values
+    accessKeyId: admin
+    secretAccessKey: changeme123

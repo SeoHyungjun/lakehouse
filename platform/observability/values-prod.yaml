@@ -1,0 +1,362 @@
+# Production Environment - Observability Configuration
+# Production-grade deployment with high availability and long retention
+
+kube-prometheus-stack:
+  # Prometheus - production resources with HA
+  prometheus:
+    enabled: true
+    
+    prometheusSpec:
+      # Long retention for production
+      retention: 30d
+      retentionSize: "100GB"
+      
+      # Production storage
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 200Gi
+            storageClassName: fast-ssd
+      
+      # Production resources
+      resources:
+        requests:
+          memory: 4Gi
+          cpu: 2000m
+        limits:
+          memory: 8Gi
+          cpu: 4000m
+      
+      # HA with 3 replicas
+      replicas: 3
+      
+      # Strict pod anti-affinity for HA
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - prometheus
+              topologyKey: kubernetes.io/hostname
+      
+      # Node selector for dedicated monitoring nodes
+      nodeSelector:
+        workload: monitoring
+      
+      # Tolerations for dedicated nodes
+      tolerations:
+        - key: "workload"
+          operator: "Equal"
+          value: "monitoring"
+          effect: "NoSchedule"
+      
+      # Scrape configs for all platform services
+      additionalScrapeConfigs:
+        # MinIO metrics
+        - job_name: 'minio'
+          metrics_path: '/minio/v2/metrics/cluster'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['minio.lakehouse-platform.svc.cluster.local:9000']
+        
+        # Trino coordinator metrics
+        - job_name: 'trino-coordinator'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['trino-coordinator.lakehouse-platform.svc.cluster.local:9090']
+        
+        # Trino worker metrics
+        - job_name: 'trino-worker'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['trino-worker.lakehouse-platform.svc.cluster.local:9090']
+        
+        # Iceberg catalog metrics
+        - job_name: 'iceberg-catalog'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['iceberg-catalog.lakehouse-platform.svc.cluster.local:9090']
+        
+        # Airflow webserver metrics
+        - job_name: 'airflow-webserver'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['airflow-webserver.lakehouse-platform.svc.cluster.local:9102']
+        
+        # Airflow scheduler metrics
+        - job_name: 'airflow-scheduler'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['airflow-scheduler.lakehouse-platform.svc.cluster.local:9102']
+        
+        # Airflow triggerer metrics (if enabled)
+        - job_name: 'airflow-triggerer'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['airflow-triggerer.lakehouse-platform.svc.cluster.local:9102']
+      
+      # Remote write for long-term storage (optional)
+      # remoteWrite:
+      #   - url: "https://prometheus-remote-storage.company.internal/api/v1/write"
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+
+  # Grafana - production resources
+  grafana:
+    enabled: true
+    
+    # Admin password MUST be overridden via external secret
+    adminPassword: OVERRIDE_WITH_EXTERNAL_SECRET
+    
+    # Production persistence
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClassName: fast-ssd
+    
+    # Production resources
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    
+    # HA with 2 replicas
+    replicas: 2
+    
+    # Pod anti-affinity
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - grafana
+              topologyKey: kubernetes.io/hostname
+    
+    # Ingress enabled for production
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      hosts:
+        - grafana.company.internal
+      tls:
+        - secretName: grafana-prod-tls
+          hosts:
+            - grafana.company.internal
+    
+    # LDAP/OAuth authentication for production
+    # ldap:
+    #   enabled: true
+    #   config: |
+    #     [[servers]]
+    #     host = "ldap.company.internal"
+    #     port = 636
+    #     use_ssl = true
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 472
+      fsGroup: 472
+
+  # Alertmanager - production resources with HA
+  alertmanager:
+    enabled: true
+    
+    alertmanagerSpec:
+      # Production storage
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 20Gi
+            storageClassName: fast-ssd
+      
+      # Production resources
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: 250m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+      
+      # HA with 3 replicas
+      replicas: 3
+      
+      # Strict pod anti-affinity
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - alertmanager
+              topologyKey: kubernetes.io/hostname
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+    
+    # Production alert routing
+    config:
+      global:
+        resolve_timeout: 5m
+        # Slack/PagerDuty/Email configuration
+        # slack_api_url: 'https://hooks.slack.com/services/XXX'
+        # pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+      
+      route:
+        group_by: ['alertname', 'cluster', 'service']
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 12h
+        receiver: 'production-critical'
+        routes:
+          - match:
+              severity: critical
+            receiver: 'production-critical'
+            continue: true
+          - match:
+              severity: warning
+            receiver: 'production-warning'
+      
+      receivers:
+        - name: 'production-critical'
+          # PagerDuty for critical alerts
+          # pagerduty_configs:
+          #   - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+          # Slack for critical alerts
+          # slack_configs:
+          #   - channel: '#alerts-critical'
+          #     title: 'Critical Alert: {{ .GroupLabels.alertname }}'
+        
+        - name: 'production-warning'
+          # Slack for warnings
+          # slack_configs:
+          #   - channel: '#alerts-warning'
+          #     title: 'Warning: {{ .GroupLabels.alertname }}'
+
+  # Node exporter enabled
+  nodeExporter:
+    enabled: true
+
+  # Kube-state-metrics enabled
+  kubeStateMetrics:
+    enabled: true
+
+  # Prometheus operator - production resources
+  prometheusOperator:
+    enabled: true
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      fsGroup: 65534
+      seccompProfile:
+        type: RuntimeDefault
+
+  # Custom alerting rules for Lakehouse platform
+  additionalPrometheusRulesMap:
+    lakehouse-rules:
+      groups:
+        - name: lakehouse.rules
+          interval: 30s
+          rules:
+            # MinIO alerts
+            - alert: MinIODown
+              expr: up{job="minio"} == 0
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: "MinIO is down"
+                description: "MinIO has been down for more than 5 minutes"
+            
+            # Trino alerts
+            - alert: TrinoCoordinatorDown
+              expr: up{job="trino-coordinator"} == 0
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Trino coordinator is down"
+                description: "Trino coordinator has been down for more than 5 minutes"
+            
+            - alert: TrinoHighQueryFailureRate
+              expr: rate(trino_queries_total{state="FAILED"}[5m]) > 0.1
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: "High Trino query failure rate"
+                description: "Trino query failure rate is above 10% for 10 minutes"
+            
+            # Iceberg catalog alerts
+            - alert: IcebergCatalogDown
+              expr: up{job="iceberg-catalog"} == 0
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Iceberg catalog is down"
+                description: "Iceberg catalog has been down for more than 5 minutes"
+            
+            # Airflow alerts
+            - alert: AirflowSchedulerDown
+              expr: up{job="airflow-scheduler"} == 0
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: "Airflow scheduler is down"
+                description: "Airflow scheduler has been down for more than 5 minutes"
+            
+            - alert: AirflowHighTaskFailureRate
+              expr: rate(airflow_dag_run_total{state="failed"}[5m]) > 0.1
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: "High Airflow task failure rate"
+                description: "Airflow task failure rate is above 10% for 10 minutes"

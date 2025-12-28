@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "iceberg-catalog.fullname" . }}
+  labels:
+    {{- include "iceberg-catalog.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "iceberg-catalog.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "iceberg-catalog.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: iceberg-catalog
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8181
+          protocol: TCP
+        {{- if .Values.metrics.enabled }}
+        - name: metrics
+          containerPort: {{ .Values.metrics.port }}
+          protocol: TCP
+        {{- end }}
+        env:
+        - name: CATALOG_WAREHOUSE
+          value: {{ .Values.catalog.warehouse | quote }}
+        - name: CATALOG_IO__IMPL
+          value: "org.apache.iceberg.aws.s3.S3FileIO"
+        - name: CATALOG_S3_ENDPOINT
+          value: {{ .Values.catalog.s3.endpoint | quote }}
+        - name: CATALOG_S3_ACCESS__KEY__ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iceberg-catalog.fullname" . }}-s3
+              key: accessKeyId
+        - name: CATALOG_S3_SECRET__ACCESS__KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iceberg-catalog.fullname" . }}-s3
+              key: secretAccessKey
+        - name: CATALOG_S3_PATH__STYLE__ACCESS
+          value: {{ .Values.catalog.s3.pathStyleAccess | quote }}
+        {{- if eq .Values.catalog.backend "jdbc" }}
+        - name: CATALOG_CATALOG__IMPL
+          value: "org.apache.iceberg.jdbc.JdbcCatalog"
+        - name: CATALOG_URI
+          value: {{ .Values.catalog.jdbc.uri | quote }}
+        - name: CATALOG_JDBC_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iceberg-catalog.fullname" . }}-jdbc
+              key: username
+              optional: true
+        - name: CATALOG_JDBC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iceberg-catalog.fullname" . }}-jdbc
+              key: password
+              optional: true
+        {{- end }}
+        {{- with .Values.extraEnv }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 10 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        {{- if .Values.persistence.enabled }}
+        volumeMounts:
+        - name: data
+          mountPath: {{ .Values.persistence.mountPath }}
+        {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ include "iceberg-catalog.fullname" . }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

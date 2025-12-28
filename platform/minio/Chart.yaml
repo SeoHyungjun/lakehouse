@@ -1,0 +1,12 @@
+apiVersion: v2
+name: minio
+description: S3-compatible object storage for Lakehouse
+type: application
+version: 0.1.0
+appVersion: "RELEASE.2024-01-01T00-00-00Z"
+
+# Dependencies - reference upstream MinIO Helm chart
+dependencies:
+  - name: minio
+    version: "5.0.14"
+    repository: https://charts.min.io/

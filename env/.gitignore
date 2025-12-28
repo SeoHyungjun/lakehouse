@@ -1,0 +1,28 @@
+# Ignore sensitive or environment-specific files
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Ignore encrypted files (before decryption)
+*.enc
+*.encrypted
+
+# Ignore local override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore any files with 'secret' or 'private' in the name
+*secret*
+*private*
+*credentials*
+
+# Ignore backup files
+*.backup
+*.bak
+*.tmp
+
+# Note: terraform.tfvars files ARE committed to Git in this project
+# as they contain only non-sensitive configuration values.
+# Secrets must be managed separately via secret management tools.

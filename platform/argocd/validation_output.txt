@@ -1,0 +1,83 @@
+==========================================
+ArgoCD Helm Chart Validation
+==========================================
+
+1. Chart Structure Validation
+------------------------------
+[0;32m✓[0m Chart.yaml exists
+[0;32m✓[0m values.yaml exists
+[0;32m✓[0m values-dev.yaml exists
+[0;32m✓[0m values-staging.yaml exists
+[0;32m✓[0m values-prod.yaml exists
+[0;32m✓[0m README.md exists
+
+2. Application Manifest Templates
+----------------------------------
+[0;32m✓[0m MinIO Application template exists
+[0;32m✓[0m Iceberg Catalog Application template exists
+[0;32m✓[0m Trino Application template exists
+[0;32m✓[0m Airflow Application template exists
+[0;32m✓[0m Observability Application template exists
+[0;32m✓[0m AppProject template exists
+
+3. Application Configuration
+-----------------------------
+[0;32m✓[0m Applications configuration present
+[0;32m✓[0m minio application configured
+[0;32m✓[0m icebergCatalog application configured
+[0;32m✓[0m trino application configured
+[0;32m✓[0m airflow application configured
+[0;32m✓[0m observability application configured
+
+4. Sync Policy Configuration
+-----------------------------
+[0;32m✓[0m Sync policy configuration present
+[0;32m✓[0m Prune option configured
+[0;32m✓[0m SelfHeal option configured
+
+5. GitOps Configuration
+-----------------------
+[0;32m✓[0m Repository URL configured
+[0;32m✓[0m Target revision configured
+[0;32m✓[0m Environment configured
+
+6. ArgoCD Server Configuration
+-------------------------------
+[0;32m✓[0m Server configuration present
+[0;32m✓[0m Server resources configured
+
+7. High Availability (Production)
+----------------------------------
+[0;32m✓[0m Production server has multiple replicas
+[0;32m✓[0m Production repo server has multiple replicas
+[0;32m✓[0m Production has pod anti-affinity configured
+
+8. Security Configuration
+-------------------------
+[0;32m✓[0m RBAC configuration present
+[0;32m✓[0m SSO enabled in production
+
+9. Helm Template Validation
+----------------------------
+[0;32m✓[0m Helm dependencies updated
+[1;33m⚠[0m Helm template rendering has warnings for dev
+[1;33m⚠[0m Helm template rendering has warnings for staging
+[1;33m⚠[0m Helm template rendering has warnings for prod
+
+10. Environment-Specific Validation
+------------------------------------
+[0;32m✓[0m Dev environment has minimal server replicas (1)
+[0;32m✓[0m Dev environment configured correctly
+[0;32m✓[0m Production environment has sufficient server replicas
+[0;32m✓[0m Production environment configured correctly
+[0;32m✓[0m Production has auto-prune disabled for safety
+
+==========================================
+Validation Summary
+==========================================
+[0;32mPassed:[0m 37
+[1;33mWarnings:[0m 3
+[0;31mFailed:[0m 0
+
+[0;32m✓ All critical validations passed![0m
+This chart provides GitOps deployment for the Lakehouse platform

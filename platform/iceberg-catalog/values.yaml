@@ -1,0 +1,135 @@
+# Iceberg REST Catalog Helm Chart Values
+# Override these values for environment-specific deployments
+
+# Image configuration
+image:
+  repository: tabulario/iceberg-rest
+  tag: "1.4.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Number of replicas
+replicaCount: 1
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8181
+  annotations: {}
+
+# Catalog configuration
+catalog:
+  # Warehouse location (S3 path) - MUST be configurable per environment
+  # Examples:
+  #   dev: s3://lakehouse-dev-warehouse/
+  #   staging: s3://lakehouse-staging-warehouse/
+  #   prod: s3://lakehouse-prod-warehouse/
+  warehouse: s3://lakehouse-dev-warehouse/
+  
+  # S3 configuration (DNS-based endpoints only, no hardcoded IPs)
+  s3:
+    # DNS-based endpoint - references MinIO service
+    endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
+    # Credentials - should be overridden via environment-specific values or external secrets
+    accessKeyId: admin
+    secretAccessKey: changeme123
+    # Path-style access required for MinIO compatibility
+    pathStyleAccess: true
+  
+  # Catalog backend type: jdbc | rest | hive | glue
+  # Backend must be swappable via configuration only (no code changes)
+  backend: jdbc
+  
+  # JDBC Catalog configuration (if backend=jdbc)
+  jdbc:
+    # JDBC URI - examples:
+    #   SQLite (dev): jdbc:sqlite:file:/data/iceberg-catalog.db
+    #   PostgreSQL: jdbc:postgresql://postgres.lakehouse-platform.svc.cluster.local:5432/iceberg
+    #   MySQL: jdbc:mysql://mysql.lakehouse-platform.svc.cluster.local:3306/iceberg
+    uri: jdbc:sqlite:file:/data/iceberg-catalog.db
+    driver: org.sqlite.JDBC
+    # Credentials (optional, not needed for SQLite)
+    username: ""
+    password: ""
+  
+  # Hive Metastore configuration (if backend=hive)
+  hive:
+    # Thrift URI
+    uri: thrift://hive-metastore.lakehouse-platform.svc.cluster.local:9083
+    confDir: /etc/hive/conf
+  
+  # AWS Glue configuration (if backend=glue)
+  glue:
+    region: us-east-1
+    catalogId: ""  # AWS Account ID (optional)
+
+# Additional environment variables
+extraEnv: []
+# - name: CUSTOM_VAR
+#   value: "custom-value"
+
+# Resource limits and requests
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+  limits:
+    memory: 1Gi
+    cpu: 500m
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /v1/config
+    port: 8181
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /v1/config
+    port: 8181
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+
+# Persistence (for JDBC backend with file-based database)
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""  # Use cluster default
+  mountPath: /data
+
+# Metrics and observability
+metrics:
+  enabled: false
+  port: 9090
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

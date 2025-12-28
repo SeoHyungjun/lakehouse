@@ -1,0 +1,61 @@
+# Production Environment - Iceberg Catalog Configuration
+# High availability setup with PostgreSQL and full observability
+
+replicaCount: 3
+
+catalog:
+  warehouse: s3://lakehouse-prod-warehouse/
+  
+  s3:
+    endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
+    # IMPORTANT: Override these via external secrets (e.g., AWS Secrets Manager, HashiCorp Vault)
+    accessKeyId: prod-access-key
+    secretAccessKey: prod-secret-key
+    pathStyleAccess: true
+  
+  # Production: Use PostgreSQL with HA
+  backend: jdbc
+  jdbc:
+    uri: jdbc:postgresql://postgres-ha.lakehouse-platform.svc.cluster.local:5432/iceberg
+    driver: org.postgresql.Driver
+    # IMPORTANT: Inject credentials via external secrets
+    username: iceberg_prod_user
+    password: iceberg_prod_password
+
+resources:
+  requests:
+    memory: 1Gi
+    cpu: 500m
+  limits:
+    memory: 2Gi
+    cpu: 1000m
+
+persistence:
+  enabled: false  # PostgreSQL backend doesn't need local persistence
+
+metrics:
+  enabled: true
+  port: 9090
+
+# High availability: spread pods across nodes
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - iceberg-catalog
+      topologyKey: kubernetes.io/hostname
+
+# Tolerate node failures
+tolerations:
+- key: node.kubernetes.io/not-ready
+  operator: Exists
+  effect: NoExecute
+  tolerationSeconds: 300
+- key: node.kubernetes.io/unreachable
+  operator: Exists
+  effect: NoExecute
+  tolerationSeconds: 300

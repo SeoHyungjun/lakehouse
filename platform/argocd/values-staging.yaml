@@ -1,0 +1,88 @@
+# Staging Environment - ArgoCD Configuration
+# Pre-production testing with moderate resources
+
+# ArgoCD subchart - moderate resources with HA
+argo-cd:
+  server:
+    replicas: 2
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+    
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-staging
+      hosts:
+        - argocd-staging.example.com
+      tls:
+        - secretName: argocd-staging-tls
+          hosts:
+            - argocd-staging.example.com
+  
+  repoServer:
+    replicas: 2
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  
+  controller:
+    replicas: 1
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+  
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# Application manifests configuration
+environment: staging
+repoURL: "https://github.com/your-org/lakehouse.git"
+targetRevision: staging
+
+# All applications enabled for staging
+applications:
+  minio:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true
+  
+  icebergCatalog:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true
+  
+  trino:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true
+  
+  airflow:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true
+  
+  observability:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true

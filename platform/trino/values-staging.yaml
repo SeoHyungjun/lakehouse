@@ -1,0 +1,136 @@
+# Staging Environment - Trino Configuration
+# Pre-production testing with moderate resources
+
+trino:
+  # Server configuration - moderate resources
+  server:
+    workers: 3
+    
+    coordinator:
+      jvm:
+        maxHeapSize: "4G"
+      
+      config:
+        general:
+          query.max-memory: "8GB"
+          query.max-memory-per-node: "2GB"
+          query.max-total-memory-per-node: "3GB"
+      
+      resources:
+        requests:
+          memory: 4Gi
+          cpu: 1000m
+        limits:
+          memory: 8Gi
+          cpu: 2000m
+    
+    worker:
+      jvm:
+        maxHeapSize: "4G"
+      
+      config:
+        general:
+          query.max-memory-per-node: "3GB"
+          query.max-total-memory-per-node: "4GB"
+      
+      resources:
+        requests:
+          memory: 4Gi
+          cpu: 1000m
+        limits:
+          memory: 8Gi
+          cpu: 2000m
+      
+      autoscaling:
+        enabled: true
+        minReplicas: 3
+        maxReplicas: 6
+        targetCPUUtilizationPercentage: 70
+      
+      # Pod anti-affinity for better availability
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - trino
+                    - key: component
+                      operator: In
+                      values:
+                        - worker
+                topologyKey: kubernetes.io/hostname
+
+  # Catalogs - staging endpoints
+  additionalCatalogs:
+    iceberg: |
+      connector.name=iceberg
+      iceberg.catalog.type=rest
+      iceberg.rest.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
+      iceberg.rest.warehouse=s3://lakehouse-staging-warehouse/
+      
+      # S3 configuration
+      fs.native-s3.enabled=true
+      s3.endpoint=http://minio.lakehouse-platform.svc.cluster.local:9000
+      s3.path-style-access=true
+      s3.aws-access-key=${ENV:S3_ACCESS_KEY}
+      s3.aws-secret-key=${ENV:S3_SECRET_KEY}
+
+  # Environment variables
+  env:
+    - name: S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: trino-s3-credentials
+          key: accessKeyId
+    - name: S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: trino-s3-credentials
+          key: secretAccessKey
+
+  # Authentication - enabled for staging
+  auth:
+    enabled: true
+    type: PASSWORD
+
+  # Security - TLS enabled for staging
+  security:
+    tls:
+      enabled: true
+      port: 8443
+
+  # Metrics - enabled for staging
+  metrics:
+    enabled: true
+
+  # Ingress - enabled for staging
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-staging
+    hosts:
+      - host: trino-staging.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: trino-staging-tls
+        hosts:
+          - trino-staging.example.com
+
+  # Pod annotations for metrics
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+
+# Secrets - staging credentials (should be managed via external secrets)
+secrets:
+  s3:
+    accessKeyId: staging-user
+    secretAccessKey: staging-password-change-me

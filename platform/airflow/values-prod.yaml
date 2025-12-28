@@ -1,0 +1,277 @@
+# Production Environment - Airflow Configuration
+# Production-grade deployment with high availability and security
+
+airflow:
+  # Executor
+  executor: "KubernetesExecutor"
+
+  # Webserver - production resources with HA
+  webserver:
+    replicas: 3
+    
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    
+    # Authentication required for production
+    defaultUser:
+      enabled: true
+      role: Admin
+      username: admin
+      email: admin@company.internal
+      firstName: Admin
+      lastName: User
+      password: OVERRIDE_WITH_EXTERNAL_SECRET
+    
+    # Pod anti-affinity for HA
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: component
+                  operator: In
+                  values:
+                    - webserver
+            topologyKey: kubernetes.io/hostname
+
+  # Scheduler - production resources with HA
+  scheduler:
+    replicas: 3
+    
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    
+    # Pod anti-affinity for HA
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: component
+                  operator: In
+                  values:
+                    - scheduler
+            topologyKey: kubernetes.io/hostname
+
+  # PostgreSQL - production resources with HA
+  postgresql:
+    enabled: true
+    auth:
+      username: airflow
+      password: OVERRIDE_WITH_EXTERNAL_SECRET
+      database: airflow
+    primary:
+      persistence:
+        enabled: true
+        size: 100Gi
+      resources:
+        requests:
+          memory: 2Gi
+          cpu: 1000m
+        limits:
+          memory: 4Gi
+          cpu: 2000m
+    
+    # Read replicas for HA
+    readReplicas:
+      replicaCount: 2
+      persistence:
+        enabled: true
+        size: 100Gi
+      resources:
+        requests:
+          memory: 2Gi
+          cpu: 1000m
+        limits:
+          memory: 4Gi
+          cpu: 2000m
+
+  # Redis - disabled for KubernetesExecutor
+  redis:
+    enabled: false
+
+  # DAGs - production persistence with GitSync
+  dags:
+    persistence:
+      enabled: true
+      size: 10Gi
+    
+    # GitSync enabled for production
+    gitSync:
+      enabled: true
+      repo: "https://github.com/your-org/lakehouse-workflows.git"
+      branch: main
+      subPath: "workflows/"
+      wait: 30
+      maxFailures: 0
+      sshKeySecret: airflow-git-ssh-secret
+
+  # Airflow configuration - production settings
+  config:
+    core:
+      dags_folder: "/opt/airflow/dags"
+      load_examples: "False"
+      parallelism: 128
+      max_active_tasks_per_dag: 32
+      max_active_runs_per_dag: 16
+      dag_file_processor_timeout: 300
+    
+    webserver:
+      expose_config: "False"
+      rbac: "True"
+      authenticate: "True"
+      auth_backend: "airflow.api.auth.backend.basic_auth"
+      web_server_worker_timeout: 300
+    
+    api:
+      auth_backends: "airflow.api.auth.backend.basic_auth"
+      enable_experimental_api: "False"
+    
+    kubernetes:
+      namespace: lakehouse-platform
+      delete_worker_pods: "True"
+      delete_worker_pods_on_failure: "False"
+      worker_pods_creation_batch_size: 10
+      multi_namespace_mode: "False"
+      pod_template_file: "/opt/airflow/pod_templates/pod_template.yaml"
+    
+    logging:
+      logging_level: "INFO"
+      remote_logging: "True"
+      remote_base_log_folder: "s3://lakehouse-prod-logs/airflow"
+      remote_log_conn_id: "aws_default"
+      encrypt_s3_logs: "True"
+    
+    metrics:
+      statsd_on: "True"
+      statsd_host: "statsd-exporter"
+      statsd_port: 9125
+      statsd_prefix: "airflow"
+
+  # Environment variables for production
+  env:
+    - name: AIRFLOW__CORE__EXECUTOR
+      value: "KubernetesExecutor"
+    - name: AIRFLOW__KUBERNETES__NAMESPACE
+      value: "lakehouse-platform"
+    - name: AIRFLOW__LOGGING__REMOTE_LOGGING
+      value: "True"
+
+  # Extra environment variables from secrets
+  extraEnvFrom:
+    - secretRef:
+        name: airflow-secrets
+
+  # Metrics - enabled for production
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 15s
+      scrapeTimeout: 10s
+      labels:
+        environment: production
+        team: data-platform
+
+  # Ingress - enabled for production with TLS
+  ingress:
+    enabled: true
+    web:
+      enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+      hosts:
+        - name: airflow.company.internal
+          tls:
+            enabled: true
+            secretName: airflow-prod-tls
+
+  # Triggerer - enabled for production with HA
+  triggerer:
+    enabled: true
+    replicas: 2
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    # Pod anti-affinity for HA
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: component
+                    operator: In
+                    values:
+                      - triggerer
+              topologyKey: kubernetes.io/hostname
+
+  # Service account with specific permissions
+  serviceAccount:
+    create: true
+    name: airflow-prod
+    annotations: {}
+      # Add cloud provider annotations if needed
+      # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/airflow-role
+
+  # Security context - production hardening
+  securityContext:
+    runAsUser: 50000
+    fsGroup: 0
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 50000
+    fsGroup: 0
+
+  # Pod annotations for production
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9102"
+    prometheus.io/path: "/metrics"
+
+  # Node selectors for dedicated nodes
+  nodeSelector:
+    workload: orchestration
+
+  # Tolerations for dedicated nodes
+  tolerations:
+    - key: "workload"
+      operator: "Equal"
+      value: "orchestration"
+      effect: "NoSchedule"
+
+  # Extra volumes for custom configurations
+  extraVolumes:
+    - name: pod-template
+      configMap:
+        name: airflow-pod-template
+
+  # Extra volume mounts
+  extraVolumeMounts:
+    - name: pod-template
+      mountPath: /opt/airflow/pod_templates
+      readOnly: true

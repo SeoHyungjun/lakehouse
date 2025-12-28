@@ -1,0 +1,309 @@
+# Observability Stack Helm Chart Values
+# Default configuration for Prometheus + Grafana monitoring
+# Override with environment-specific values files
+
+# Global settings
+global:
+  namespace: lakehouse-platform
+
+# kube-prometheus-stack subchart configuration
+# All values are passed to the upstream kube-prometheus-stack Helm chart
+kube-prometheus-stack:
+  # Prometheus configuration
+  prometheus:
+    enabled: true
+    
+    prometheusSpec:
+      # Retention
+      retention: 15d
+      retentionSize: "50GB"
+      
+      # Storage
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 50Gi
+      
+      # Resources
+      resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 4Gi
+          cpu: 2000m
+      
+      # Service monitor selector
+      # Matches ServiceMonitors with label: prometheus=lakehouse
+      serviceMonitorSelector:
+        matchLabels:
+          prometheus: lakehouse
+      
+      # Pod monitor selector
+      podMonitorSelector:
+        matchLabels:
+          prometheus: lakehouse
+      
+      # Additional scrape configs for platform services
+      additionalScrapeConfigs:
+        # MinIO metrics
+        - job_name: 'minio'
+          metrics_path: '/minio/v2/metrics/cluster'
+          static_configs:
+            - targets: ['minio.lakehouse-platform.svc.cluster.local:9000']
+        
+        # Trino metrics (via JMX exporter)
+        - job_name: 'trino-coordinator'
+          static_configs:
+            - targets: ['trino-coordinator.lakehouse-platform.svc.cluster.local:9090']
+        
+        - job_name: 'trino-worker'
+          static_configs:
+            - targets: ['trino-worker.lakehouse-platform.svc.cluster.local:9090']
+        
+        # Iceberg catalog metrics
+        - job_name: 'iceberg-catalog'
+          static_configs:
+            - targets: ['iceberg-catalog.lakehouse-platform.svc.cluster.local:9090']
+        
+        # Airflow metrics (via StatsD exporter)
+        - job_name: 'airflow-webserver'
+          static_configs:
+            - targets: ['airflow-webserver.lakehouse-platform.svc.cluster.local:9102']
+        
+        - job_name: 'airflow-scheduler'
+          static_configs:
+            - targets: ['airflow-scheduler.lakehouse-platform.svc.cluster.local:9102']
+      
+      # Replicas for HA
+      replicas: 1
+      
+      # Pod anti-affinity
+      affinity: {}
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+
+  # Grafana configuration
+  grafana:
+    enabled: true
+    
+    # Admin credentials (MUST be overridden in production)
+    adminPassword: admin
+    
+    # Persistence
+    persistence:
+      enabled: true
+      size: 10Gi
+    
+    # Resources
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    # Service
+    service:
+      type: ClusterIP
+      port: 80
+    
+    # Datasources
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            url: http://kube-prometheus-stack-prometheus.lakehouse-platform.svc.cluster.local:9090
+            access: proxy
+            isDefault: true
+            jsonData:
+              timeInterval: 30s
+    
+    # Dashboard providers
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+          - name: 'lakehouse'
+            orgId: 1
+            folder: 'Lakehouse'
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/lakehouse
+          - name: 'kubernetes'
+            orgId: 1
+            folder: 'Kubernetes'
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/kubernetes
+    
+    # Pre-configured dashboards
+    dashboards:
+      lakehouse:
+        # MinIO dashboard
+        minio:
+          gnetId: 13502
+          revision: 10
+          datasource: Prometheus
+        
+        # Trino dashboard
+        trino:
+          gnetId: 13629
+          revision: 1
+          datasource: Prometheus
+        
+        # Airflow dashboard
+        airflow:
+          gnetId: 13629
+          revision: 1
+          datasource: Prometheus
+      
+      kubernetes:
+        # Kubernetes cluster monitoring
+        cluster:
+          gnetId: 7249
+          revision: 1
+          datasource: Prometheus
+        
+        # Node exporter
+        nodes:
+          gnetId: 1860
+          revision: 27
+          datasource: Prometheus
+    
+    # Ingress
+    ingress:
+      enabled: false
+      ingressClassName: ""
+      annotations: {}
+      hosts: []
+      tls: []
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 472
+      fsGroup: 472
+
+  # Alertmanager configuration
+  alertmanager:
+    enabled: true
+    
+    alertmanagerSpec:
+      # Storage
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+      
+      # Resources
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 200m
+      
+      # Replicas for HA
+      replicas: 1
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+    
+    # Alertmanager configuration
+    config:
+      global:
+        resolve_timeout: 5m
+      
+      route:
+        group_by: ['alertname', 'cluster', 'service']
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 12h
+        receiver: 'null'
+        routes:
+          - match:
+              alertname: Watchdog
+            receiver: 'null'
+      
+      receivers:
+        - name: 'null'
+
+  # Node exporter (for node metrics)
+  nodeExporter:
+    enabled: true
+
+  # Kube-state-metrics (for Kubernetes object metrics)
+  kubeStateMetrics:
+    enabled: true
+
+  # Prometheus operator
+  prometheusOperator:
+    enabled: true
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 200m
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      fsGroup: 65534
+
+  # Default rules
+  defaultRules:
+    create: true
+    rules:
+      alertmanager: true
+      etcd: false
+      configReloaders: true
+      general: true
+      k8s: true
+      kubeApiserverAvailability: true
+      kubeApiserverBurnrate: true
+      kubeApiserverHistogram: true
+      kubeApiserverSlos: true
+      kubelet: true
+      kubeProxy: false
+      kubePrometheusGeneral: true
+      kubePrometheusNodeRecording: true
+      kubernetesApps: true
+      kubernetesResources: true
+      kubernetesStorage: true
+      kubernetesSystem: true
+      kubeScheduler: false
+      kubeStateMetrics: true
+      network: true
+      node: true
+      nodeExporterAlerting: true
+      nodeExporterRecording: true
+      prometheus: true
+      prometheusOperator: true

@@ -1,0 +1,191 @@
+# Airflow Helm Chart Values
+# Default configuration for Apache Airflow workflow orchestrator
+# Override with environment-specific values files
+
+# Global settings
+global:
+  namespace: lakehouse-platform
+
+# Airflow subchart configuration
+# All values are passed to the upstream Airflow Helm chart
+airflow:
+  # Executor type: KubernetesExecutor for container-based jobs
+  # Reference: contracts/workflow-orchestration.md section 5.1
+  executor: "KubernetesExecutor"
+
+  # Image configuration
+  images:
+    airflow:
+      repository: apache/airflow
+      tag: "2.8.0-python3.11"
+      pullPolicy: IfNotPresent
+
+  # Webserver configuration
+  webserver:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    service:
+      type: ClusterIP
+      port: 8080
+    
+    # Default user
+    defaultUser:
+      enabled: true
+      role: Admin
+      username: admin
+      email: admin@example.com
+      firstName: Admin
+      lastName: User
+      password: admin
+
+  # Scheduler configuration
+  scheduler:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+
+  # PostgreSQL (metadata database)
+  postgresql:
+    enabled: true
+    auth:
+      username: airflow
+      password: airflow
+      database: airflow
+    primary:
+      persistence:
+        enabled: true
+        size: 8Gi
+
+  # Redis (disabled for KubernetesExecutor)
+  redis:
+    enabled: false
+
+  # DAGs configuration
+  dags:
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClassName: ""
+    
+    # GitSync configuration for DAG deployment
+    gitSync:
+      enabled: false
+      repo: ""
+      branch: main
+      subPath: "workflows/"
+      wait: 60
+      maxFailures: 0
+
+  # Airflow configuration
+  # Reference: contracts/workflow-orchestration.md section 12
+  config:
+    core:
+      dags_folder: "/opt/airflow/dags"
+      load_examples: "False"
+      executor: "KubernetesExecutor"
+      parallelism: 32
+      max_active_tasks_per_dag: 16
+      max_active_runs_per_dag: 16
+    
+    webserver:
+      expose_config: "True"
+      rbac: "True"
+      authenticate: "True"
+      auth_backend: "airflow.api.auth.backend.basic_auth"
+    
+    api:
+      auth_backends: "airflow.api.auth.backend.basic_auth"
+    
+    kubernetes:
+      namespace: lakehouse-platform
+      worker_container_repository: apache/airflow
+      worker_container_tag: "2.8.0-python3.11"
+      delete_worker_pods: "True"
+      delete_worker_pods_on_failure: "False"
+      worker_pods_creation_batch_size: 1
+      multi_namespace_mode: "False"
+    
+    logging:
+      remote_logging: "False"
+      colored_console_log: "True"
+      logging_level: "INFO"
+    
+    metrics:
+      statsd_on: "False"
+
+  # Environment variables
+  env:
+    - name: AIRFLOW__CORE__EXECUTOR
+      value: "KubernetesExecutor"
+    - name: AIRFLOW__KUBERNETES__NAMESPACE
+      value: "lakehouse-platform"
+
+  # Extra environment variables from secrets
+  extraEnvFrom: []
+
+  # Ingress configuration
+  ingress:
+    enabled: false
+    web:
+      enabled: false
+      annotations: {}
+      hosts: []
+      tls: []
+
+  # Metrics and monitoring
+  metrics:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+      interval: 30s
+      selector:
+        prometheus: kube-prometheus
+
+  # Service account
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+
+  # Security context
+  securityContext:
+    runAsUser: 50000
+    fsGroup: 0
+
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 50000
+    fsGroup: 0
+
+  # Extra volumes
+  extraVolumes: []
+
+  # Extra volume mounts
+  extraVolumeMounts: []
+
+  # Triggerer (for deferrable operators)
+  triggerer:
+    enabled: false
+    replicas: 1
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 200m

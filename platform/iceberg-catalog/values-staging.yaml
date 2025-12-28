@@ -1,0 +1,50 @@
+# Staging Environment - Iceberg Catalog Configuration
+# Uses PostgreSQL for better reliability and testing production-like setup
+
+replicaCount: 2
+
+catalog:
+  warehouse: s3://lakehouse-staging-warehouse/
+  
+  s3:
+    endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
+    # Override credentials via external secrets in production
+    accessKeyId: staging-access-key
+    secretAccessKey: staging-secret-key
+    pathStyleAccess: true
+  
+  # Use PostgreSQL for staging (production-like)
+  backend: jdbc
+  jdbc:
+    uri: jdbc:postgresql://postgres.lakehouse-platform.svc.cluster.local:5432/iceberg
+    driver: org.postgresql.Driver
+    username: iceberg_user
+    password: iceberg_password  # Should be overridden via external secrets
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+  limits:
+    memory: 1Gi
+    cpu: 500m
+
+persistence:
+  enabled: false  # Not needed for PostgreSQL backend
+
+metrics:
+  enabled: true
+  port: 9090
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - iceberg-catalog
+        topologyKey: kubernetes.io/hostname

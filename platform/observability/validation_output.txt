@@ -1,0 +1,77 @@
+==========================================
+Observability Helm Chart Validation
+==========================================
+
+1. Chart Structure Validation
+------------------------------
+[0;32m✓[0m Chart.yaml exists
+[0;32m✓[0m values.yaml exists
+[0;32m✓[0m values-dev.yaml exists
+[0;32m✓[0m values-staging.yaml exists
+[0;32m✓[0m values-prod.yaml exists
+[0;32m✓[0m README.md exists
+
+2. Prometheus Configuration
+----------------------------
+[0;32m✓[0m Prometheus enabled
+[0;32m✓[0m Retention period configured
+[0;32m✓[0m Storage configuration present
+[0;32m✓[0m Additional scrape configs present
+[0;32m✓[0m MinIO scrape config present
+[0;32m✓[0m Trino scrape config present
+[0;32m✓[0m Iceberg catalog scrape config present
+[0;32m✓[0m Airflow scrape config present
+
+3. Grafana Configuration
+------------------------
+[0;32m✓[0m Grafana enabled
+[1;33m⚠[0m Grafana persistence not enabled
+[0;32m✓[0m Grafana datasources configured
+[0;32m✓[0m Grafana dashboard providers configured
+
+4. Alertmanager Configuration
+------------------------------
+[0;32m✓[0m Alertmanager enabled
+[0;32m✓[0m Alertmanager storage configured
+
+5. High Availability (Production)
+----------------------------------
+[1;33m⚠[0m Production Prometheus should have multiple replicas
+[1;33m⚠[0m Production Grafana should have multiple replicas
+[1;33m⚠[0m Production Alertmanager should have multiple replicas
+[0;32m✓[0m Production has pod anti-affinity configured
+
+6. Security Configuration
+-------------------------
+[0;32m✓[0m Security context configured
+[0;32m✓[0m Runs as non-root user
+[0;32m✓[0m No default admin password in production values
+
+7. Resource Configuration
+-------------------------
+[0;32m✓[0m Resource requests/limits configured
+[0;32m✓[0m Memory limits configured
+[0;32m✓[0m CPU limits configured
+
+8. Helm Template Validation
+----------------------------
+[0;32m✓[0m Helm dependencies updated
+[0;32m✓[0m Helm template renders successfully for dev
+[0;32m✓[0m Helm template renders successfully for staging
+[0;32m✓[0m Helm template renders successfully for prod
+
+9. Environment-Specific Validation
+------------------------------------
+[0;32m✓[0m Dev environment has short retention (3d)
+[0;32m✓[0m Production environment has long retention (30d)
+[1;33m⚠[0m Production environment may need more Prometheus replicas
+
+==========================================
+Validation Summary
+==========================================
+[0;32mPassed:[0m 32
+[1;33mWarnings:[0m 5
+[0;31mFailed:[0m 0
+
+[0;32m✓ All critical validations passed![0m
+This chart provides comprehensive observability for the Lakehouse platform

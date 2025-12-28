@@ -1,0 +1,172 @@
+# Staging Environment - Observability Configuration
+# Pre-production testing with moderate resources
+
+kube-prometheus-stack:
+  # Prometheus - moderate resources
+  prometheus:
+    enabled: true
+    
+    prometheusSpec:
+      # Moderate retention for staging
+      retention: 7d
+      retentionSize: "20GB"
+      
+      # Moderate storage
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 30Gi
+      
+      # Moderate resources
+      resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 2Gi
+          cpu: 1000m
+      
+      # HA with 2 replicas
+      replicas: 2
+      
+      # Pod anti-affinity for HA
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - prometheus
+                topologyKey: kubernetes.io/hostname
+      
+      # Scrape configs for platform services
+      additionalScrapeConfigs:
+        - job_name: 'minio'
+          metrics_path: '/minio/v2/metrics/cluster'
+          static_configs:
+            - targets: ['minio.lakehouse-platform.svc.cluster.local:9000']
+        
+        - job_name: 'trino-coordinator'
+          static_configs:
+            - targets: ['trino-coordinator.lakehouse-platform.svc.cluster.local:9090']
+        
+        - job_name: 'trino-worker'
+          static_configs:
+            - targets: ['trino-worker.lakehouse-platform.svc.cluster.local:9090']
+        
+        - job_name: 'iceberg-catalog'
+          static_configs:
+            - targets: ['iceberg-catalog.lakehouse-platform.svc.cluster.local:9090']
+        
+        - job_name: 'airflow-webserver'
+          static_configs:
+            - targets: ['airflow-webserver.lakehouse-platform.svc.cluster.local:9102']
+        
+        - job_name: 'airflow-scheduler'
+          static_configs:
+            - targets: ['airflow-scheduler.lakehouse-platform.svc.cluster.local:9102']
+
+  # Grafana - moderate resources
+  grafana:
+    enabled: true
+    
+    # Admin password should be changed
+    adminPassword: CHANGE_ME_STAGING
+    
+    # Moderate persistence
+    persistence:
+      enabled: true
+      size: 5Gi
+    
+    # Moderate resources
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    # Ingress enabled for staging
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-staging
+      hosts:
+        - grafana-staging.example.com
+      tls:
+        - secretName: grafana-staging-tls
+          hosts:
+            - grafana-staging.example.com
+
+  # Alertmanager - moderate resources with HA
+  alertmanager:
+    enabled: true
+    
+    alertmanagerSpec:
+      # Moderate storage
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 5Gi
+      
+      # Moderate resources
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 200m
+      
+      # HA with 2 replicas
+      replicas: 2
+    
+    # Alert routing configuration
+    config:
+      global:
+        resolve_timeout: 5m
+      
+      route:
+        group_by: ['alertname', 'cluster', 'service']
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 12h
+        receiver: 'staging-alerts'
+      
+      receivers:
+        - name: 'staging-alerts'
+          # Configure email/Slack/PagerDuty here
+          # email_configs:
+          #   - to: 'staging-alerts@example.com'
+
+  # Node exporter enabled
+  nodeExporter:
+    enabled: true
+
+  # Kube-state-metrics enabled
+  kubeStateMetrics:
+    enabled: true
+
+  # Prometheus operator - moderate resources
+  prometheusOperator:
+    enabled: true
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 200m

@@ -1,0 +1,82 @@
+==========================================
+Airflow Helm Chart Validation
+==========================================
+
+1. Chart Structure Validation
+------------------------------
+[0;32m✓[0m Chart.yaml exists
+[0;32m✓[0m values.yaml exists
+[0;32m✓[0m values-dev.yaml exists
+[0;32m✓[0m values-staging.yaml exists
+[0;32m✓[0m values-prod.yaml exists
+[0;32m✓[0m README.md exists
+
+2. Contract Compliance - KubernetesExecutor
+--------------------------------------------
+[0;32m✓[0m KubernetesExecutor configured (container-based jobs)
+[0;32m✓[0m No CeleryExecutor (contract compliant)
+[0;32m✓[0m Redis disabled (not needed for KubernetesExecutor)
+
+3. Contract Compliance - No Hardcoded Values
+---------------------------------------------
+[0;32m✓[0m No hardcoded IP addresses
+[0;32m✓[0m No default passwords in production values
+[0;32m✓[0m Production values reference external secrets
+
+4. Contract Compliance - GitSync Support
+-----------------------------------------
+[0;32m✓[0m GitSync configuration present
+[0;32m✓[0m GitSync enabled in production
+[0;32m✓[0m GitSync disabled in development (expected)
+
+5. Observability Requirements
+------------------------------
+[0;32m✓[0m Metrics configuration present
+[0;32m✓[0m ServiceMonitor configuration present
+[0;32m✓[0m Metrics enabled in production
+[0;32m✓[0m Logging configuration present
+
+6. Security Configuration
+-------------------------
+[0;32m✓[0m Authentication configuration present
+[0;32m✓[0m RBAC configuration present
+[0;32m✓[0m Authentication enabled in production
+[0;32m✓[0m Security context configured
+[0;32m✓[0m Runs as non-root user
+
+7. Resource Configuration
+-------------------------
+[0;32m✓[0m Resource requests/limits configured
+[0;32m✓[0m Memory limits configured
+[0;32m✓[0m CPU limits configured
+
+8. High Availability (Production)
+----------------------------------
+[0;32m✓[0m Production webserver has multiple replicas
+[0;32m✓[0m Production scheduler has multiple replicas
+[0;32m✓[0m Production has pod anti-affinity configured
+
+9. Helm Template Validation
+----------------------------
+[0;32m✓[0m Helm dependencies updated
+[0;31m✗[0m Helm template rendering failed for dev
+[0;31m✗[0m Helm template rendering failed for staging
+[0;31m✗[0m Helm template rendering failed for prod
+
+10. Environment-Specific Validation
+------------------------------------
+[0;32m✓[0m Dev environment has minimal webserver replicas (1)
+[0;32m✓[0m Dev environment has authentication disabled for ease of use
+[0;32m✓[0m Production environment has sufficient webserver replicas
+[0;32m✓[0m Production environment has authentication enabled
+[0;32m✓[0m Production environment has GitSync enabled
+
+==========================================
+Validation Summary
+==========================================
+[0;32mPassed:[0m 36
+[1;33mWarnings:[0m 0
+[0;31mFailed:[0m 3
+
+[0;31m✗ Some validations failed.[0m
+Please review the failures above and ensure contract compliance.

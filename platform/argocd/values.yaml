@@ -1,0 +1,189 @@
+# ArgoCD Helm Chart Values
+# Configuration for ArgoCD and Application manifests
+
+# Global settings
+global:
+  namespace: argocd
+
+# ArgoCD subchart configuration
+argo-cd:
+  # Global configuration
+  global:
+    image:
+      repository: quay.io/argoproj/argocd
+      tag: "v2.9.3"
+  
+  # Server configuration
+  server:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+    
+    service:
+      type: ClusterIP
+      servicePortHttp: 80
+      servicePortHttps: 443
+    
+    # Ingress
+    ingress:
+      enabled: false
+      ingressClassName: ""
+      annotations: {}
+      hosts: []
+      tls: []
+    
+    # Extra args
+    extraArgs:
+      - --insecure  # Disable TLS for internal cluster access
+  
+  # Repository server configuration
+  repoServer:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  
+  # Application controller configuration
+  controller:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+  
+  # Redis configuration
+  redis:
+    enabled: true
+    
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 200m
+  
+  # Dex (SSO) - disabled by default
+  dex:
+    enabled: false
+  
+  # Notifications controller
+  notifications:
+    enabled: false
+  
+  # ApplicationSet controller
+  applicationSet:
+    enabled: true
+    
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 200m
+  
+  # Configs
+  configs:
+    # Repository credentials
+    repositories: {}
+    
+    # Cluster credentials
+    clusterCredentials: []
+    
+    # ArgoCD configuration
+    params:
+      server.insecure: true
+      application.instanceLabelKey: argocd.argoproj.io/instance
+    
+    # RBAC configuration
+    rbac:
+      policy.default: role:readonly
+      policy.csv: |
+        p, role:admin, applications, *, */*, allow
+        p, role:admin, clusters, *, *, allow
+        p, role:admin, repositories, *, *, allow
+        p, role:admin, projects, *, *, allow
+        g, admin, role:admin
+  
+  # Metrics
+  metrics:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+
+# Application manifests configuration
+# These values are used by the Application templates
+
+# ArgoCD namespace
+argocdNamespace: argocd
+
+# Platform namespace where applications will be deployed
+platformNamespace: lakehouse-platform
+
+# Git repository URL
+repoURL: "https://github.com/your-org/lakehouse.git"
+
+# Target revision (branch/tag/commit)
+targetRevision: HEAD
+
+# Environment (dev, staging, prod)
+environment: dev
+
+# Destination Kubernetes cluster
+destinationServer: "https://kubernetes.default.svc"
+
+# AppProject name
+project: lakehouse
+
+# Application configurations
+applications:
+  # MinIO (S3-compatible object storage)
+  minio:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true
+  
+  # Iceberg Catalog (REST catalog)
+  icebergCatalog:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true
+  
+  # Trino (SQL query engine)
+  trino:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true
+  
+  # Airflow (workflow orchestration)
+  airflow:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true
+  
+  # Observability (Prometheus + Grafana)
+  observability:
+    enabled: true
+    syncPolicy:
+      prune: true
+      selfHeal: true

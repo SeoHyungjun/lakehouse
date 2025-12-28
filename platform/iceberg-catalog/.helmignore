@@ -1,0 +1,11 @@
+# Patterns to ignore when packaging Helm chart
+.git/
+.gitignore
+*.md
+!Chart.yaml
+!values.yaml
+!values-*.yaml
+*.tmp
+*.bak
+.DS_Store
+validate.sh

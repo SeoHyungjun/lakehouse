@@ -39,7 +39,7 @@ If any item is missing, the work is not done.
 
 ## 5. Interface Compliance
 
-- Fully complies with contracts/
+- Fully complies with contracts/ 
 - No reliance on internal implementations of other modules
 
 ---

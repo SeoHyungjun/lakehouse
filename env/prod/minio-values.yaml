@@ -1,0 +1,122 @@
+# MinIO Configuration - Production Environment
+
+# Deployment mode: distributed for high availability
+mode: distributed
+
+# Number of replicas (minimum 4 for distributed mode)
+replicas: 4
+
+# Persistence configuration
+persistence:
+  enabled: true
+  size: 100Gi
+  storageClass: "fast-ssd"  # Use high-performance storage class
+
+# Resource allocation (production-grade)
+resources:
+  requests:
+    memory: 2Gi
+    cpu: 1000m
+  limits:
+    memory: 4Gi
+    cpu: 2000m
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 9000
+  consolePort: 9001
+
+# Root credentials - MUST be injected via Kubernetes secrets
+# DO NOT hardcode production credentials!
+# Use: kubectl create secret generic minio-credentials \
+#        --from-literal=rootUser=<user> \
+#        --from-literal=rootPassword=<password>
+rootUser: ${MINIO_ROOT_USER}
+rootPassword: ${MINIO_ROOT_PASSWORD}
+
+# Buckets to create automatically
+buckets:
+  - name: lakehouse-prod-raw
+    policy: none
+    purge: false
+  - name: lakehouse-prod-warehouse
+    policy: none
+    purge: false
+  - name: lakehouse-prod-temp
+    policy: none
+    purge: false
+  - name: lakehouse-prod-archive
+    policy: none
+    purge: false
+
+# Security context
+securityContext:
+  enabled: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# TLS configuration (enabled for production)
+tls:
+  enabled: true
+  certSecret: minio-tls-cert
+
+# Ingress configuration
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+  hosts:
+    - minio.lakehouse.example.com
+  tls:
+    - secretName: minio-tls-cert
+      hosts:
+        - minio.lakehouse.example.com
+
+# Metrics (enabled for production monitoring)
+metrics:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+
+# Console ingress
+consoleIngress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - minio-console.lakehouse.example.com
+  tls:
+    - secretName: minio-console-tls-cert
+      hosts:
+        - minio-console.lakehouse.example.com
+
+# Affinity rules (spread pods across nodes)
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - minio
+        topologyKey: kubernetes.io/hostname
+
+# Node selector (optional - use dedicated storage nodes)
+nodeSelector: {}
+  # storage: "true"
+
+# Tolerations (optional)
+tolerations: []
+
+# Priority class (optional - ensure MinIO pods are scheduled first)
+priorityClassName: ""
+  # high-priority
