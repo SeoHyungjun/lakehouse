@@ -1,0 +1,12 @@
+apiVersion: v2
+name: sample-service
+description: Sample REST API service for Lakehouse platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - lakehouse
+  - rest-api
+  - sample
+maintainers:
+  - name: Lakehouse Team

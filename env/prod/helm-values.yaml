@@ -1,0 +1,457 @@
+# Production Environment - Helm Values Overrides
+#
+# This file contains Helm value overrides for all platform components
+# in the production environment. Production uses maximum HA, security, and resources.
+#
+# Usage:
+#   helm install <component> ./platform/<component> \
+#     --values env/prod/helm-values.yaml
+
+# ============================================================================
+# MinIO (Object Storage)
+# ============================================================================
+
+minio:
+  mode: distributed
+  replicas: 8  # High HA with 8 replicas
+  
+  persistence:
+    enabled: true
+    size: 200Gi
+    storageClass: io2
+  
+  resources:
+    requests:
+      memory: 4Gi
+      cpu: 2000m
+    limits:
+      memory: 8Gi
+      cpu: 4000m
+  
+  # Production uses external secrets only
+  existingSecret: minio-prod-credentials
+  
+  buckets:
+    - name: lakehouse-prod-warehouse
+      policy: none
+      purge: false
+  
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app: minio
+          topologyKey: kubernetes.io/hostname
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - minio.lakehouse.company.internal
+    tls:
+      - secretName: minio-prod-tls
+        hosts:
+          - minio.lakehouse.company.internal
+
+# ============================================================================
+# Iceberg Catalog
+# ============================================================================
+
+icebergCatalog:
+  replicaCount: 3  # High HA with 3 replicas
+  
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+  
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: io2
+  
+  config:
+    warehouse: s3://lakehouse-prod-warehouse/
+    s3:
+      endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
+      # Production uses external secrets
+      accessKeyIdSecret: minio-prod-credentials
+      secretAccessKeySecret: minio-prod-credentials
+  
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app: iceberg-catalog
+          topologyKey: kubernetes.io/hostname
+  
+  nodeSelector:
+    workload: data-platform
+
+# ============================================================================
+# Trino (Query Engine)
+# ============================================================================
+
+trino:
+  server:
+    workers: 5
+    autoscaling:
+      enabled: true
+      minReplicas: 5
+      maxReplicas: 20
+      targetCPUUtilizationPercentage: 60
+  
+  coordinator:
+    resources:
+      requests:
+        memory: 16Gi
+        cpu: 8000m
+      limits:
+        memory: 32Gi
+        cpu: 16000m
+  
+  worker:
+    resources:
+      requests:
+        memory: 16Gi
+        cpu: 8000m
+      limits:
+        memory: 32Gi
+        cpu: 16000m
+  
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              component: worker
+          topologyKey: kubernetes.io/hostname
+  
+  nodeSelector:
+    workload: analytics
+  
+  tolerations:
+    - key: "analytics"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+  
+  auth:
+    enabled: true
+    type: oauth2
+  
+  tls:
+    enabled: true
+    secretName: trino-prod-tls
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    hosts:
+      - trino.lakehouse.company.internal
+    tls:
+      - secretName: trino-prod-tls
+        hosts:
+          - trino.lakehouse.company.internal
+
+# ============================================================================
+# Airflow (Workflow Orchestration)
+# ============================================================================
+
+airflow:
+  executor: KubernetesExecutor
+  
+  webserver:
+    replicas: 3  # High HA
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 1000m
+      limits:
+        memory: 4Gi
+        cpu: 2000m
+  
+  scheduler:
+    replicas: 3  # High HA
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 1000m
+      limits:
+        memory: 4Gi
+        cpu: 2000m
+  
+  postgresql:
+    enabled: true
+    persistence:
+      size: 100Gi
+      storageClass: io2
+    replication:
+      enabled: true
+      numSynchronousReplicas: 2
+  
+  dags:
+    gitSync:
+      enabled: true
+      repo: https://github.com/your-org/lakehouse-dags.git
+      branch: main
+      subPath: dags
+      sshKeySecret: airflow-git-ssh-key
+  
+  config:
+    logging:
+      remote_logging: true
+      remote_base_log_folder: s3://lakehouse-prod-logs/airflow
+      logging_level: INFO
+  
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              component: webserver
+          topologyKey: kubernetes.io/hostname
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - airflow.lakehouse.company.internal
+    tls:
+      - secretName: airflow-prod-tls
+        hosts:
+          - airflow.lakehouse.company.internal
+
+# ============================================================================
+# Observability (Prometheus + Grafana)
+# ============================================================================
+
+observability:
+  prometheus:
+    retention: 30d
+    storageSize: 200Gi
+    replicas: 3  # High HA
+    
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: 2000m
+      limits:
+        memory: 8Gi
+        cpu: 4000m
+    
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: prometheus
+            topologyKey: kubernetes.io/hostname
+    
+    nodeSelector:
+      workload: monitoring
+    
+    # Production alerting rules
+    additionalAlertRules:
+      - name: lakehouse-critical
+        rules:
+          - alert: TrinoDown
+            expr: up{job="trino"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Trino is down"
+          
+          - alert: MinIODown
+            expr: up{job="minio"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "MinIO is down"
+  
+  grafana:
+    replicas: 3  # High HA
+    adminPasswordSecret: grafana-prod-credentials
+    
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: grafana
+            topologyKey: kubernetes.io/hostname
+    
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      hosts:
+        - grafana.lakehouse.company.internal
+      tls:
+        - secretName: grafana-prod-tls
+          hosts:
+            - grafana.lakehouse.company.internal
+  
+  alertmanager:
+    enabled: true
+    replicas: 3
+    config:
+      global:
+        resolve_timeout: 5m
+      
+      route:
+        group_by: ['alertname', 'cluster', 'service']
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 12h
+        receiver: 'team-pagerduty'
+        routes:
+          - match:
+              severity: critical
+            receiver: 'team-pagerduty'
+          - match:
+              severity: warning
+            receiver: 'team-email'
+      
+      receivers:
+        - name: 'team-pagerduty'
+          pagerduty_configs:
+            - service_key: '<pagerduty-key>'
+        
+        - name: 'team-email'
+          email_configs:
+            - to: 'prod-alerts@example.com'
+
+# ============================================================================
+# ArgoCD (GitOps)
+# ============================================================================
+
+argocd:
+  server:
+    replicas: 3  # High HA
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: argocd-server
+            topologyKey: kubernetes.io/hostname
+    
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      hosts:
+        - argocd.lakehouse.company.internal
+      tls:
+        - secretName: argocd-prod-tls
+          hosts:
+            - argocd.lakehouse.company.internal
+  
+  repoServer:
+    replicas: 3  # High HA
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: argocd-repo-server
+            topologyKey: kubernetes.io/hostname
+  
+  controller:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 1000m
+      limits:
+        memory: 4Gi
+        cpu: 2000m
+  
+  # Production SSO
+  dex:
+    enabled: true
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 100m
+  
+  # Production notifications
+  notifications:
+    enabled: true
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 100m
+  
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+  
+  # Production RBAC
+  configs:
+    rbac:
+      policy.default: role:readonly
+      policy.csv: |
+        p, role:admin, applications, *, */*, allow
+        p, role:admin, clusters, *, *, allow
+        p, role:admin, repositories, *, *, allow
+        g, argocd-admins, role:admin

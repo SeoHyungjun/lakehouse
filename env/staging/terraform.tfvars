@@ -1,7 +1,7 @@
 # Staging Environment Configuration
 #
 # This file contains environment-specific values for the staging environment.
-# All values here override the defaults in infra/variables.tf
+# Staging mirrors production but with reduced resources for cost optimization.
 #
 # Usage:
 #   cd infra/
@@ -29,11 +29,10 @@ tags = {
 
 cluster_name    = "lakehouse-staging"
 cluster_version = "1.28.0"
-node_count      = 3  # Multi-node for realistic testing
+node_count      = 3  # HA with 3 nodes
 
-# Cloud-specific instance type (example for AWS)
-# Adjust based on your cloud provider
-node_instance_type = "t3.medium"
+# Cloud-specific instance type (adjust for your cloud provider)
+node_instance_type = "t3.large"  # AWS example
 
 # ============================================================================
 # Network Configuration
@@ -49,6 +48,6 @@ enable_private_network  = true  # Private network for staging
 # ============================================================================
 
 storage_name            = "lakehouse-staging-storage"
-storage_class           = "gp3"  # Cloud-specific storage class
+storage_class           = "gp3"  # SSD storage
 enable_object_storage   = true
 object_storage_size_gb  = 100  # Moderate size for staging

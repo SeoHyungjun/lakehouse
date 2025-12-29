@@ -7,11 +7,17 @@ This directory contains environment-specific configuration files for the Lakehou
 ```
 env/
 ├── dev/
-│   └── terraform.tfvars       # Development environment configuration
+│   ├── terraform.tfvars       # Development Terraform configuration
+│   ├── helm-values.yaml       # Development Helm values overrides
+│   └── minio-values.yaml      # Development MinIO-specific values
 ├── staging/
-│   └── terraform.tfvars       # Staging environment configuration
+│   ├── terraform.tfvars       # Staging Terraform configuration
+│   ├── helm-values.yaml       # Staging Helm values overrides
+│   └── minio-values.yaml      # Staging MinIO-specific values
 └── prod/
-    └── terraform.tfvars       # Production environment configuration
+    ├── terraform.tfvars       # Production Terraform configuration
+    ├── helm-values.yaml       # Production Helm values overrides
+    └── minio-values.yaml      # Production MinIO-specific values
 ```
 
 ## Purpose
@@ -39,6 +45,46 @@ terraform apply -var-file=../env/staging/terraform.tfvars
 # Production
 terraform plan -var-file=../env/prod/terraform.tfvars
 terraform apply -var-file=../env/prod/terraform.tfvars
+```
+
+### Apply Helm Values to Platform Components
+
+```bash
+# Install MinIO with environment-specific values
+helm install minio ./platform/minio \
+  --namespace lakehouse-platform \
+  --create-namespace \
+  --values env/dev/helm-values.yaml
+
+# Install Trino with environment-specific values
+helm install trino ./platform/trino \
+  --namespace lakehouse-platform \
+  --values env/dev/helm-values.yaml
+
+# Install all components with environment-specific values
+# Development
+helm install argocd ./platform/argocd \
+  --namespace argocd \
+  --create-namespace \
+  --values env/dev/helm-values.yaml \
+  --set repoURL=https://github.com/your-org/lakehouse.git \
+  --set environment=dev
+
+# Staging
+helm install argocd ./platform/argocd \
+  --namespace argocd \
+  --create-namespace \
+  --values env/staging/helm-values.yaml \
+  --set repoURL=https://github.com/your-org/lakehouse.git \
+  --set environment=staging
+
+# Production
+helm install argocd ./platform/argocd \
+  --namespace argocd \
+  --create-namespace \
+  --values env/prod/helm-values.yaml \
+  --set repoURL=https://github.com/your-org/lakehouse.git \
+  --set environment=prod
 ```
 
 ## Environment Characteristics

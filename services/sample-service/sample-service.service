@@ -1,0 +1,43 @@
+[Unit]
+Description=Lakehouse Sample Service
+Documentation=https://github.com/your-org/lakehouse
+After=network.target
+
+[Service]
+Type=simple
+User=lakehouse
+Group=lakehouse
+WorkingDirectory=/opt/lakehouse/sample-service
+
+# Environment variables
+Environment="SERVICE_PORT=8080"
+Environment="LOG_LEVEL=INFO"
+Environment="TRINO_ENDPOINT=http://trino.lakehouse.local:8080"
+Environment="S3_ENDPOINT=http://minio.lakehouse.local:9000"
+Environment="ICEBERG_CATALOG_URI=http://iceberg-catalog.lakehouse.local:8181"
+
+# Start service
+ExecStart=/usr/bin/python3 /opt/lakehouse/sample-service/app.py
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Resource limits
+MemoryLimit=512M
+CPUQuota=50%
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/lakehouse/sample-service
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sample-service
+
+[Install]
+WantedBy=multi-user.target

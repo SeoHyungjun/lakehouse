@@ -1,14 +1,12 @@
 # Production Environment Configuration
 #
 # This file contains environment-specific values for the production environment.
-# All values here override the defaults in infra/variables.tf
+# Production uses maximum resources, HA, and strict security settings.
 #
 # Usage:
 #   cd infra/
 #   terraform plan -var-file=../env/prod/terraform.tfvars
 #   terraform apply -var-file=../env/prod/terraform.tfvars
-#
-# IMPORTANT: Review all changes carefully before applying to production!
 
 # ============================================================================
 # General Configuration
@@ -23,8 +21,7 @@ tags = {
   Project     = "lakehouse"
   Owner       = "data-engineering"
   CostCenter  = "data-platform"
-  Criticality = "high"
-  Backup      = "required"
+  Compliance  = "required"
 }
 
 # ============================================================================
@@ -33,11 +30,10 @@ tags = {
 
 cluster_name    = "lakehouse-prod"
 cluster_version = "1.28.0"
-node_count      = 5  # Multi-node for high availability
+node_count      = 5  # HA with 5 nodes for production
 
-# Cloud-specific instance type (example for AWS)
-# Adjust based on your cloud provider and workload requirements
-node_instance_type = "m5.xlarge"
+# Cloud-specific instance type (adjust for your cloud provider)
+node_instance_type = "t3.xlarge"  # AWS example - larger instances for production
 
 # ============================================================================
 # Network Configuration
@@ -46,13 +42,13 @@ node_instance_type = "m5.xlarge"
 network_name            = "lakehouse-prod-network"
 cidr_block              = "10.2.0.0/16"
 enable_dns              = true
-enable_private_network  = true  # Private network for production security
+enable_private_network  = true  # Strict private network for production
 
 # ============================================================================
 # Storage Configuration
 # ============================================================================
 
 storage_name            = "lakehouse-prod-storage"
-storage_class           = "gp3"  # Cloud-specific storage class with better performance
+storage_class           = "io2"  # High-performance SSD for production
 enable_object_storage   = true
-object_storage_size_gb  = 1000  # Large size for production workloads
+object_storage_size_gb  = 500  # Large size for production workloads

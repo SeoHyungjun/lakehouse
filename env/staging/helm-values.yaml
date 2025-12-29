@@ -1,0 +1,299 @@
+# Staging Environment - Helm Values Overrides
+#
+# This file contains Helm value overrides for all platform components
+# in the staging environment. Staging mirrors production with reduced resources.
+#
+# Usage:
+#   helm install <component> ./platform/<component> \
+#     --values env/staging/helm-values.yaml
+
+# ============================================================================
+# MinIO (Object Storage)
+# ============================================================================
+
+minio:
+  mode: distributed
+  replicas: 4  # HA with 4 replicas
+  
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: gp3
+  
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+  
+  # Use secrets for credentials in staging
+  existingSecret: minio-credentials
+  
+  buckets:
+    - name: lakehouse-staging-warehouse
+      policy: none
+      purge: false
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - minio-staging.example.com
+
+# ============================================================================
+# Iceberg Catalog
+# ============================================================================
+
+icebergCatalog:
+  replicaCount: 2  # HA with 2 replicas
+  
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: gp3
+  
+  config:
+    warehouse: s3://lakehouse-staging-warehouse/
+    s3:
+      endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
+      # Use external secrets in staging
+      accessKeyIdSecret: minio-credentials
+      secretAccessKeySecret: minio-credentials
+  
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app: iceberg-catalog
+            topologyKey: kubernetes.io/hostname
+
+# ============================================================================
+# Trino (Query Engine)
+# ============================================================================
+
+trino:
+  server:
+    workers: 3
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+  
+  coordinator:
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: 2000m
+      limits:
+        memory: 8Gi
+        cpu: 4000m
+  
+  worker:
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: 2000m
+      limits:
+        memory: 8Gi
+        cpu: 4000m
+  
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                component: worker
+            topologyKey: kubernetes.io/hostname
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - trino-staging.example.com
+    tls:
+      - secretName: trino-staging-tls
+        hosts:
+          - trino-staging.example.com
+
+# ============================================================================
+# Airflow (Workflow Orchestration)
+# ============================================================================
+
+airflow:
+  executor: KubernetesExecutor
+  
+  webserver:
+    replicas: 2  # HA
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  
+  scheduler:
+    replicas: 2  # HA
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  
+  postgresql:
+    enabled: true
+    persistence:
+      size: 20Gi
+      storageClass: gp3
+  
+  dags:
+    gitSync:
+      enabled: true
+      repo: https://github.com/your-org/lakehouse-dags.git
+      branch: staging
+      subPath: dags
+  
+  config:
+    logging:
+      remote_logging: false
+      logging_level: INFO
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - airflow-staging.example.com
+    tls:
+      - secretName: airflow-staging-tls
+        hosts:
+          - airflow-staging.example.com
+
+# ============================================================================
+# Observability (Prometheus + Grafana)
+# ============================================================================
+
+observability:
+  prometheus:
+    retention: 7d
+    storageSize: 30Gi
+    replicas: 2  # HA
+    
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: prometheus
+              topologyKey: kubernetes.io/hostname
+  
+  grafana:
+    replicas: 2  # HA
+    adminPasswordSecret: grafana-credentials
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - grafana-staging.example.com
+      tls:
+        - secretName: grafana-staging-tls
+          hosts:
+            - grafana-staging.example.com
+  
+  alertmanager:
+    enabled: true
+    replicas: 2
+    config:
+      receivers:
+        - name: 'team-email'
+          email_configs:
+            - to: 'staging-alerts@example.com'
+
+# ============================================================================
+# ArgoCD (GitOps)
+# ============================================================================
+
+argocd:
+  server:
+    replicas: 2  # HA
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+    
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - argocd-staging.example.com
+      tls:
+        - secretName: argocd-staging-tls
+          hosts:
+            - argocd-staging.example.com
+  
+  repoServer:
+    replicas: 2  # HA
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  
+  controller:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+  
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true

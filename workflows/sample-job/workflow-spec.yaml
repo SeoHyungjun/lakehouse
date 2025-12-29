@@ -1,0 +1,171 @@
+# Sample Workflow Specification
+# Orchestrator-agnostic workflow definition per Workflow Orchestration Contract
+#
+# This workflow specification defines a complete data pipeline with:
+# - Scheduling (cron-based)
+# - Multiple jobs with dependencies
+# - Parameterization
+# - Resource management
+
+workflow:
+  # Workflow metadata
+  name: sample_data_pipeline
+  description: Sample data ingestion and processing pipeline
+  
+  # Tags for organization
+  tags:
+    - sample
+    - ingestion
+    - iceberg
+  
+  # Schedule configuration
+  schedule:
+    # Cron expression: Daily at 2 AM UTC
+    cron: "0 2 * * *"
+    
+    # Timezone
+    timezone: "UTC"
+    
+    # Start date (when workflow becomes active)
+    start_date: "2024-01-01"
+    
+    # End date (optional - when workflow stops)
+    # end_date: "2024-12-31"
+    
+    # Catchup (whether to backfill missed runs)
+    catchup: false
+  
+  # Default parameters for all jobs
+  default_params:
+    execution_date: "{{ ds }}"
+    environment: "dev"
+  
+  # Default environment variables for all jobs
+  default_env:
+    LOG_LEVEL: "INFO"
+    TRINO_ENDPOINT: "http://trino.lakehouse-platform.svc.cluster.local:8080"
+    S3_ENDPOINT: "http://minio.lakehouse-platform.svc.cluster.local:9000"
+  
+  # Jobs in the workflow
+  jobs:
+    # Job 1: Ingest data
+    - job:
+        name: ingest_data
+        description: Ingest sample data into raw tables
+        image: lakehouse/sample-ingest:1.0.0
+        command: ["python", "ingest.py"]
+        args:
+          - "--date"
+          - "{{ execution_date }}"
+          - "--table"
+          - "iceberg.sample.raw_data"
+          - "--batch-size"
+          - "1000"
+        params:
+          execution_date: "{{ ds }}"
+          target_table: "iceberg.sample.raw_data"
+          batch_size: "1000"
+        env:
+          TRINO_CATALOG: "iceberg"
+          TRINO_SCHEMA: "sample"
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        retry:
+          max_attempts: 3
+          delay: "5m"
+      # No dependencies - this is the first job
+      depends_on: []
+    
+    # Job 2: Transform data
+    - job:
+        name: transform_data
+        description: Transform raw data into processed tables
+        image: lakehouse/sample-transform:1.0.0
+        command: ["python", "transform.py"]
+        args:
+          - "--date"
+          - "{{ execution_date }}"
+          - "--input-table"
+          - "iceberg.sample.raw_data"
+          - "--output-table"
+          - "iceberg.sample.processed_data"
+        params:
+          execution_date: "{{ ds }}"
+          input_table: "iceberg.sample.raw_data"
+          output_table: "iceberg.sample.processed_data"
+        env:
+          TRINO_CATALOG: "iceberg"
+          TRINO_SCHEMA: "sample"
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "1Gi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        retry:
+          max_attempts: 3
+          delay: "5m"
+      # Depends on ingest_data job
+      depends_on: ["ingest_data"]
+    
+    # Job 3: Validate data
+    - job:
+        name: validate_data
+        description: Validate processed data quality
+        image: lakehouse/sample-validate:1.0.0
+        command: ["python", "validate.py"]
+        args:
+          - "--date"
+          - "{{ execution_date }}"
+          - "--table"
+          - "iceberg.sample.processed_data"
+        params:
+          execution_date: "{{ ds }}"
+          table: "iceberg.sample.processed_data"
+          quality_checks:
+            - "row_count"
+            - "null_check"
+            - "schema_validation"
+        env:
+          TRINO_CATALOG: "iceberg"
+          TRINO_SCHEMA: "sample"
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        retry:
+          max_attempts: 2
+          delay: "3m"
+      # Depends on transform_data job
+      depends_on: ["transform_data"]
+  
+  # Notification configuration (optional)
+  notifications:
+    on_success:
+      - type: email
+        to: ["data-team@company.com"]
+        subject: "Sample Pipeline Succeeded: {{ execution_date }}"
+    
+    on_failure:
+      - type: email
+        to: ["data-team@company.com", "oncall@company.com"]
+        subject: "Sample Pipeline Failed: {{ execution_date }}"
+      - type: slack
+        channel: "#data-alerts"
+        message: "Sample pipeline failed for {{ execution_date }}"
+  
+  # SLA configuration (optional)
+  sla:
+    duration: "4h"  # Pipeline should complete within 4 hours
+    alert:
+      - type: email
+        to: ["oncall@company.com"]

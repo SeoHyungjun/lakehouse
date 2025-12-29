@@ -1,5 +1,8 @@
 # Lakehouse Project – Architecture & Engineering Principles
 
+**English** | [한국어](README_KR.md)
+
+
 ## 1. Project Scope
 
 This project defines a **Lakehouse architecture** that is:

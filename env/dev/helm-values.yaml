@@ -1,0 +1,219 @@
+# Development Environment - Helm Values Overrides
+#
+# This file contains Helm value overrides for all platform components
+# in the development environment.
+#
+# Usage:
+#   helm install <component> ./platform/<component> \
+#     --values env/dev/helm-values.yaml
+
+# ============================================================================
+# MinIO (Object Storage)
+# ============================================================================
+
+minio:
+  mode: standalone
+  replicas: 1
+  
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: standard
+  
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  
+  # Development credentials (DO NOT use in production!)
+  rootUser: minioadmin
+  rootPassword: minioadmin
+  
+  buckets:
+    - name: lakehouse-dev-warehouse
+      policy: none
+      purge: false
+
+# ============================================================================
+# Iceberg Catalog
+# ============================================================================
+
+icebergCatalog:
+  replicaCount: 1
+  
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  
+  persistence:
+    enabled: true
+    size: 5Gi
+  
+  config:
+    warehouse: s3://lakehouse-dev-warehouse/
+    s3:
+      endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
+      accessKeyId: minioadmin
+      secretAccessKey: minioadmin
+
+# ============================================================================
+# Trino (Query Engine)
+# ============================================================================
+
+trino:
+  server:
+    workers: 2
+    autoscaling:
+      enabled: false
+  
+  coordinator:
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  
+  worker:
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+  
+  additionalCatalogs:
+    iceberg: |
+      connector.name=iceberg
+      iceberg.catalog.type=rest
+      iceberg.rest-catalog.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
+      hive.s3.endpoint=http://minio.lakehouse-platform.svc.cluster.local:9000
+      hive.s3.path-style-access=true
+      hive.s3.aws-access-key=minioadmin
+      hive.s3.aws-secret-key=minioadmin
+
+# ============================================================================
+# Airflow (Workflow Orchestration)
+# ============================================================================
+
+airflow:
+  executor: KubernetesExecutor
+  
+  webserver:
+    replicas: 1
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+  
+  scheduler:
+    replicas: 1
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+  
+  postgresql:
+    enabled: true
+    persistence:
+      size: 5Gi
+  
+  dags:
+    gitSync:
+      enabled: false  # Use local DAGs for development
+  
+  config:
+    logging:
+      remote_logging: false
+      logging_level: DEBUG
+
+# ============================================================================
+# Observability (Prometheus + Grafana)
+# ============================================================================
+
+observability:
+  prometheus:
+    retention: 3d
+    storageSize: 10Gi
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+  
+  grafana:
+    replicas: 1
+    adminPassword: admin  # Development only!
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 250m
+  
+  alertmanager:
+    enabled: false  # Disable alerts in development
+
+# ============================================================================
+# ArgoCD (GitOps)
+# ============================================================================
+
+argocd:
+  server:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 250m
+  
+  repoServer:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 250m
+  
+  controller:
+    replicas: 1
+    
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  
+  # Development settings
+  configs:
+    params:
+      server.insecure: true  # No TLS in development

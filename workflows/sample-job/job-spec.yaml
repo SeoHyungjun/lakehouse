@@ -1,0 +1,88 @@
+# Sample Job Specification
+# Orchestrator-agnostic job definition per Workflow Orchestration Contract
+#
+# This job specification can be used with:
+# - Apache Airflow (via KubernetesExecutor)
+# - Dagster (via k8s_job_executor)
+# - Argo Workflows
+# - Kubernetes CronJobs
+# - Any orchestrator that supports containerized job execution
+
+job:
+  # Job metadata
+  name: sample_data_ingest
+  description: Ingest sample data into Iceberg tables via Trino
+  
+  # Container image
+  # This image contains the business logic (ingest.py)
+  # No orchestrator-specific dependencies
+  image: lakehouse/sample-ingest:1.0.0
+  
+  # Command to execute
+  # Override container entrypoint if needed
+  command: ["python", "ingest.py"]
+  
+  # Arguments to command
+  # Uses template variables for dynamic values
+  args:
+    - "--date"
+    - "{{ execution_date }}"
+    - "--table"
+    - "{{ params.target_table }}"
+    - "--batch-size"
+    - "{{ params.batch_size }}"
+  
+  # Job parameters
+  # These can be overridden at runtime
+  params:
+    execution_date: "{{ ds }}"  # Execution date in YYYY-MM-DD format
+    target_table: "iceberg.sample.data"
+    batch_size: "1000"
+    source_type: "generated"  # or "csv", "database", etc.
+  
+  # Environment variables
+  # Configuration injected at runtime
+  env:
+    # Trino connection
+    TRINO_ENDPOINT: "http://trino.lakehouse-platform.svc.cluster.local:8080"
+    TRINO_CATALOG: "iceberg"
+    TRINO_SCHEMA: "sample"
+    
+    # Iceberg catalog
+    ICEBERG_CATALOG_URI: "http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181"
+    
+    # S3 (MinIO) connection
+    S3_ENDPOINT: "http://minio.lakehouse-platform.svc.cluster.local:9000"
+    S3_BUCKET: "lakehouse-dev-warehouse"
+    
+    # Logging
+    LOG_LEVEL: "INFO"
+  
+  # Resource requests and limits
+  # Ensures job has sufficient resources
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  
+  # Retry policy
+  # Automatic retry on transient failures
+  retry:
+    max_attempts: 3
+    delay: "5m"
+    backoff_multiplier: 2  # Exponential backoff
+  
+  # Timeout
+  # Maximum execution time
+  timeout: "30m"
+  
+  # Labels
+  # For monitoring and organization
+  labels:
+    app: lakehouse
+    component: ingestion
+    environment: dev
+    team: data-engineering
