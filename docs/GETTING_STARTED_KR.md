@@ -126,15 +126,27 @@ ls -la
 ### 2.4 플랫폼 접속
 
 ```bash
-# 서비스 포트 포워딩
+# 1. Trino (SQL Query Engine)
+# 접속: http://localhost:8080
 kubectl port-forward -n lakehouse-platform svc/trino 8080:8080 &
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 &
-kubectl port-forward -n lakehouse-platform svc/grafana 3000:3000 &
 
-# 브라우저에서 접속
-# Trino UI: http://localhost:8080
-# MinIO Console: http://localhost:9000 (admin/minioadmin)
-# Grafana: http://localhost:3000 (admin/admin)
+# 2. Airflow (Workflow Orchestration)
+# 접속: http://localhost:8081 (admin / admin)
+kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8081:8080 &
+
+# 3. ArgoCD (GitOps Dashboard)
+# 접속: http://localhost:8082 (admin / 패스워드 확인 필요)
+# 패스워드 확인: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+kubectl port-forward -n argocd svc/argocd-server 8082:80 &
+
+# 4. MinIO (Object Storage)
+# 접속: http://127.0.0.1:9001 (admin / changeme123)
+# 주의: macOS에서는 localhost 대신 127.0.0.1을 명시해야 접속이 원활할 수 있습니다.
+kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 9001:9001 --address 127.0.0.1 &
+
+# 5. Grafana (Dashboard)
+# 접속: http://localhost:3000 (admin / admin)
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 3000:80 &
 ```
 
 ### 2.5 첫 번째 쿼리 실행
