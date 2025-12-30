@@ -31,13 +31,15 @@ spec:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
-      - ServerSideApply=true  # Required for CRDs
+      - ServerSideApply=true
+      - Validate=false
+      - SkipDryRunOnMissingResource=true
     retry:
-      limit: 5
+      limit: 10
       backoff:
-        duration: 5s
+        duration: 20s
         factor: 2
-        maxDuration: 3m
+        maxDuration: 5m
   
   ignoreDifferences:
     - group: apps
