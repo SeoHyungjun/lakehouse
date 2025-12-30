@@ -61,7 +61,9 @@ airflow:
   postgresql:
     enabled: true
     image:
-      tag: "latest"
+      registry: docker.io
+      repository: bitnami/postgresql
+      tag: "15.5.0-debian-11-r0"
     auth:
       username: airflow
       password: airflow
