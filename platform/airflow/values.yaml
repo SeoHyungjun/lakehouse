@@ -140,6 +140,12 @@ airflow:
   # Extra environment variables from secrets
   extraEnvFrom: null
 
+  # Database migration job configuration
+  migrateDatabaseJob:
+    enabled: true
+    useHelmHooks: false
+    applyCustomEnv: true
+
   # Ingress configuration
   ingress:
     enabled: false
