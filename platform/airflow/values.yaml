@@ -34,7 +34,6 @@ airflow:
     
     service:
       type: ClusterIP
-      port: 8080
     
     # Default user
     defaultUser:
@@ -135,7 +134,7 @@ airflow:
       value: "lakehouse-platform"
 
   # Extra environment variables from secrets
-  extraEnvFrom: []
+  extraEnvFrom: null
 
   # Ingress configuration
   ingress:
@@ -144,7 +143,6 @@ airflow:
       enabled: false
       annotations: {}
       hosts: []
-      tls: []
 
   # Metrics and monitoring
   metrics:
