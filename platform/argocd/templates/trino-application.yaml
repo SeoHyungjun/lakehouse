@@ -13,6 +13,7 @@ spec:
     repoURL: {{ .Values.repoURL | required "repoURL is required" }}
     targetRevision: {{ .Values.targetRevision | default "HEAD" }}
     path: platform/trino
+    helm:
       valueFiles:
         - values.yaml
         - ../../env/{{ .Values.environment }}/trino-values.yaml

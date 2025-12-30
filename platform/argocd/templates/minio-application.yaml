@@ -14,6 +14,7 @@ spec:
     repoURL: {{ .Values.repoURL | required "repoURL is required" }}
     targetRevision: {{ .Values.targetRevision | default "HEAD" }}
     path: platform/minio
+    helm:
       valueFiles:
         - values.yaml
         - ../../env/{{ .Values.environment }}/minio-values.yaml
