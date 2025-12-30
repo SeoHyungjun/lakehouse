@@ -186,11 +186,11 @@ kubectl port-forward svc/trino -n lakehouse-platform 8080:8080
 
 Each script supports three environments:
 
-| Environment | Description | Terraform Dir | ArgoCD Values |
-|-------------|-------------|---------------|---------------|
-| `dev` | Local development (kind) | `infra/environments/dev/` | `values-dev.yaml` |
-| `staging` | Pre-production testing | `infra/environments/staging/` | `values-staging.yaml` |
-| `prod` | Production | `infra/environments/prod/` | `values-prod.yaml` |
+| Environment | Description | Terraform Dir | Terraform Vars | ArgoCD Values |
+|-------------|-------------|---------------|----------------|---------------|
+| `dev` | Local development (kind) | `infra/` | `env/dev/terraform.tfvars` | `values-dev.yaml` |
+| `staging` | Pre-production testing | `infra/` | `env/staging/terraform.tfvars` | `values-staging.yaml` |
+| `prod` | Production | `infra/` | `env/prod/terraform.tfvars` | `values-prod.yaml` |
 
 ---
 
@@ -203,14 +203,14 @@ Each script supports three environments:
 **Solution:**
 ```bash
 # Check Terraform configuration
-cd infra/environments/dev
+cd infra
 terraform validate
 
-# View detailed error
-terraform plan
+# View detailed error with environment-specific vars
+terraform plan -var-file=../env/dev/terraform.tfvars
 
 # Fix configuration and re-run bootstrap
-cd ../../..
+cd ..
 ./scripts/bootstrap.sh dev
 ```
 
@@ -362,5 +362,5 @@ For issues or questions:
 1. Check the troubleshooting section above
 2. Review script output for detailed error messages
 3. Check Kubernetes events: `kubectl get events --all-namespaces --sort-by='.lastTimestamp'`
-4. Validate Terraform: `terraform validate` in `infra/environments/<env>/`
+4. Validate Terraform: `cd infra && terraform validate`
 5. Validate Helm charts: `helm template <chart>` in `platform/<component>/`

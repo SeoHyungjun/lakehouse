@@ -1,4 +1,5 @@
-{{- if .Values.applications.minio.enabled }}
+
+{{- if and .Values.installApps .Values.applications.minio.enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,7 +16,8 @@ spec:
     path: platform/minio
     helm:
       valueFiles:
-        - values-{{ .Values.environment | default "dev" }}.yaml
+        - values.yaml
+        - ../../env/{{ .Values.environment }}/platform-values.yaml
   
   destination:
     server: {{ .Values.destinationServer | default "https://kubernetes.default.svc" }}
@@ -23,9 +25,8 @@ spec:
   
   syncPolicy:
     automated:
-      prune: {{ .Values.applications.minio.syncPolicy.prune | default true }}
-      selfHeal: {{ .Values.applications.minio.syncPolicy.selfHeal | default true }}
-      allowEmpty: false
+      prune: {{ .Values.applications.minio.syncPolicy.prune }}
+      selfHeal: {{ .Values.applications.minio.syncPolicy.selfHeal }}
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground

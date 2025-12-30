@@ -1,3 +1,4 @@
+{{- if .Values.installApps }}
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -51,14 +52,6 @@ spec:
         kind: ConfigMap
         name: kube-root-ca.crt
   
-  # Sync windows (optional - can be used to restrict sync times)
-  # syncWindows:
-  #   - kind: allow
-  #     schedule: '0 0 * * *'
-  #     duration: 1h
-  #     applications:
-  #       - '*'
-  
   # Roles for RBAC
   roles:
     - name: admin
@@ -83,3 +76,4 @@ spec:
         - p, proj:lakehouse:viewer, applications, get, lakehouse/*, allow
       groups:
         - lakehouse-viewers
+{{- end }}

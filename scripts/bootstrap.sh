@@ -30,7 +30,8 @@ NC='\033[0m' # No Color
 ENVIRONMENT="${1:-dev}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-TERRAFORM_DIR="${PROJECT_ROOT}/infra/environments/${ENVIRONMENT}"
+TERRAFORM_DIR="${PROJECT_ROOT}/infra"
+ENV_VARS_FILE="${PROJECT_ROOT}/env/${ENVIRONMENT}/terraform.tfvars"
 PLATFORM_DIR="${PROJECT_ROOT}/platform"
 ARGOCD_NAMESPACE="argocd"
 PLATFORM_NAMESPACE="lakehouse-platform"
@@ -84,7 +85,7 @@ check_prerequisites() {
     if ! command -v terraform &> /dev/null; then
         error_exit "Terraform is not installed. Please install Terraform >= 1.5.0"
     fi
-    TERRAFORM_VERSION=$(terraform version -json | grep -o '"version":"[^"]*' | cut -d'"' -f4)
+    TERRAFORM_VERSION=$(terraform version | head -n1 | awk '{print $2}')
     log_success "Terraform: ${TERRAFORM_VERSION}"
     
     # Check Helm
@@ -130,6 +131,11 @@ validate_environment() {
         error_exit "Terraform main.tf not found in ${TERRAFORM_DIR}"
     fi
     
+    # Check for environment-specific variables file
+    if [ ! -f "${ENV_VARS_FILE}" ]; then
+        error_exit "Environment variables file not found: ${ENV_VARS_FILE}"
+    fi
+    
     log_success "Environment configuration validated"
     echo ""
 }
@@ -150,7 +156,7 @@ provision_infrastructure() {
     
     # Plan Terraform changes
     log_info "Planning Terraform changes..."
-    terraform plan -out=tfplan || error_exit "Terraform plan failed"
+    terraform plan -var-file="${ENV_VARS_FILE}" -out=tfplan || error_exit "Terraform plan failed"
     
     # Apply Terraform changes
     log_info "Applying Terraform changes..."
@@ -208,14 +214,24 @@ install_argocd() {
     log_info "Updating Helm dependencies..."
     helm dependency update .
     
-    # Install ArgoCD
-    log_info "Installing ArgoCD Helm chart..."
+    # Step 1: Install ArgoCD Core (without Applications) to setup CRDs
+    log_info "Installing ArgoCD Core (skipping applications for CRD setup)..."
     helm upgrade --install argocd . \
         --namespace "${ARGOCD_NAMESPACE}" \
         --create-namespace \
         --values "values-${ENVIRONMENT}.yaml" \
+        --set installApps=false \
         --wait \
-        --timeout 10m || error_exit "ArgoCD installation failed"
+        --timeout 10m || error_exit "ArgoCD Core installation failed"
+
+    # Step 2: Install Applications
+    log_info "Installing ArgoCD Applications..."
+    helm upgrade --install argocd . \
+        --namespace "${ARGOCD_NAMESPACE}" \
+        --values "values-${ENVIRONMENT}.yaml" \
+        --set installApps=true \
+        --wait \
+        --timeout 5m || error_exit "ArgoCD Application installation failed"
     
     log_success "ArgoCD installed successfully"
     echo ""
@@ -228,16 +244,13 @@ wait_for_argocd() {
     log_info "Step 4: Waiting for ArgoCD to be ready..."
     
     # Wait for ArgoCD server deployment
-    kubectl wait --for=condition=available \
-        --timeout=300s \
-        deployment/argocd-server \
-        -n "${ARGOCD_NAMESPACE}" || error_exit "ArgoCD server not ready"
+    kubectl rollout status deployment/argocd-server -n "${ARGOCD_NAMESPACE}" --timeout=300s || error_exit "ArgoCD server not ready"
     
-    # Wait for ArgoCD application controller
-    kubectl wait --for=condition=available \
-        --timeout=300s \
-        deployment/argocd-application-controller \
-        -n "${ARGOCD_NAMESPACE}" || error_exit "ArgoCD controller not ready"
+    # Wait for ArgoCD application controller (StatefulSet)
+    kubectl rollout status statefulset/argocd-application-controller -n "${ARGOCD_NAMESPACE}" --timeout=300s || error_exit "ArgoCD controller not ready"
+    
+    # Wait for ArgoCD repo server
+    kubectl rollout status deployment/argocd-repo-server -n "${ARGOCD_NAMESPACE}" --timeout=300s || error_exit "ArgoCD repo server not ready"
     
     log_success "ArgoCD is ready"
     echo ""

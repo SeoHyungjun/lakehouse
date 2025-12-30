@@ -1,4 +1,4 @@
-{{- if .Values.applications.trino.enabled }}
+{{- if and .Values.installApps .Values.applications.trino.enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

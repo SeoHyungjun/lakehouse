@@ -5,6 +5,10 @@
 global:
   namespace: argocd
 
+# Control flag for installing Application and Project manifests
+# Set to false for initial bootstrap to avoid CRD race conditions
+installApps: true
+
 # ArgoCD subchart configuration
 argo-cd:
   # Global configuration
@@ -137,7 +141,7 @@ argocdNamespace: argocd
 platformNamespace: lakehouse-platform
 
 # Git repository URL
-repoURL: "https://github.com/your-org/lakehouse.git"
+repoURL: "https://github.com/SeoHyungjun/lakehouse.git"
 
 # Target revision (branch/tag/commit)
 targetRevision: HEAD

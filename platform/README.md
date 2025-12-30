@@ -95,6 +95,33 @@ All charts follow these conventions:
 ### Upstream Chart Usage
 Charts that reference upstream Helm charts (MinIO, Trino, Airflow, Observability, ArgoCD) use the `dependencies` field in `Chart.yaml`. Custom values override upstream defaults.
 
+### Helm Dependency Management
+
+**Important**: Helm chart dependency `.tgz` files are **NOT committed to Git**.
+
+```yaml
+# Chart.yaml declares dependencies
+dependencies:
+  - name: argo-cd
+    version: "5.51.0"
+    repository: https://argoproj.github.io/argo-helm
+```
+
+Dependencies are downloaded automatically:
+```bash
+# Download dependencies (creates charts/*.tgz files)
+helm dependency update .
+
+# These .tgz files are in .gitignore
+# Git tracks only the declaration in Chart.yaml
+```
+
+**Why?**
+- ✅ **GitOps Principle**: Git stores declarations, not binaries
+- ✅ **Reproducibility**: Same Chart.yaml → same dependencies
+- ✅ **Repository Size**: Keeps Git repo small
+- ✅ **Version Control**: Only track version numbers, not binary diffs
+
 ## Installation
 
 ### Prerequisites

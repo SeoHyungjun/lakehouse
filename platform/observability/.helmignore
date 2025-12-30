@@ -35,4 +35,4 @@ validation_output.txt
 *.test.yaml
 
 # Charts directory
-charts/
+

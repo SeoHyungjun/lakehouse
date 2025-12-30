@@ -65,6 +65,10 @@ cd platform/argocd
 helm dependency update
 ```
 
+> **Note**: This command downloads the ArgoCD Helm chart (`.tgz` file) into the `charts/` directory.  
+> These `.tgz` files are **NOT committed to Git** (they're in `.gitignore`).  
+> Git tracks only the dependency declaration in `Chart.yaml`, following GitOps principles.
+
 ### 3. Deploy ArgoCD
 
 **Development Environment:**

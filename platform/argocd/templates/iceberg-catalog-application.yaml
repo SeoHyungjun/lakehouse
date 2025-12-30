@@ -1,4 +1,4 @@
-{{- if .Values.applications.icebergCatalog.enabled }}
+{{- if and .Values.installApps .Values.applications.icebergCatalog.enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -37,13 +37,7 @@ spec:
         factor: 2
         maxDuration: 3m
   
-  # Iceberg catalog depends on MinIO
-  {{- if .Values.applications.minio.enabled }}
-  sync:
-    hooks:
-      - name: wait-for-minio
-        type: PreSync
-  {{- end }}
+
   
   ignoreDifferences:
     - group: apps
