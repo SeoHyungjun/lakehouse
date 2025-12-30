@@ -61,7 +61,7 @@ airflow:
   postgresql:
     enabled: true
     image:
-      tag: "15"
+      tag: "latest"
     auth:
       username: airflow
       password: airflow
