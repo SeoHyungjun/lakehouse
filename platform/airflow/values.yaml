@@ -44,6 +44,25 @@ airflow:
       firstName: Admin
       lastName: User
       password: admin
+    
+    # Probes configuration
+    livenessProbe:
+      initialDelaySeconds: 60
+      timeoutSeconds: 30
+      failureThreshold: 5
+      periodSeconds: 20
+    
+    readinessProbe:
+      initialDelaySeconds: 60
+      timeoutSeconds: 30
+      failureThreshold: 5
+      periodSeconds: 20
+    
+    startupProbe:
+      initialDelaySeconds: 60
+      timeoutSeconds: 30
+      failureThreshold: 10
+      periodSeconds: 20
 
   # Scheduler configuration
   scheduler:
