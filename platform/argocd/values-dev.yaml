@@ -35,7 +35,7 @@ argo-cd:
 
 # Application manifests configuration
 environment: dev
-repoURL: "https://github.com/your-org/lakehouse.git"
+repoURL: "https://github.com/SeoHyungjun/lakehouse.git"
 targetRevision: main
 
 # All applications enabled for development
