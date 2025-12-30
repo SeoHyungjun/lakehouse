@@ -8,15 +8,17 @@ trino:
           max-memory: "1GB"
       resources:
         requests:
-          memory: 1.5Gi
+          memory: 1Gi
           cpu: 500m
+        limits: {} # Unbounded for dev stability
     worker:
       jvm:
         maxHeapSize: "1G"
       resources:
         requests:
-          memory: 1.5Gi
+          memory: 1Gi
           cpu: 500m
+        limits: {} # Unbounded for dev stability
   additionalCatalogs:
     iceberg: |
       connector.name=iceberg
