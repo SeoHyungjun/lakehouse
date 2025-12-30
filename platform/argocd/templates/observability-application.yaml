@@ -34,6 +34,7 @@ spec:
       - ServerSideApply=true
       - Validate=false
       - SkipDryRunOnMissingResource=true
+      - Replace=true
     retry:
       limit: 10
       backoff:
