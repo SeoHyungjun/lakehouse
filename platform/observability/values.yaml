@@ -92,6 +92,18 @@ kube-prometheus-stack:
         seccompProfile:
           type: RuntimeDefault
 
+  # Disable monitoring of kube-system components to avoid ArgoCD permission issues
+  kubeControllerManager:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeProxy:
+    enabled: false
+  kubeEtcd:
+    enabled: false
+  coreDns:
+    enabled: false
+
   # Grafana configuration
   grafana:
     enabled: true
