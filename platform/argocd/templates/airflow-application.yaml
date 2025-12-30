@@ -13,9 +13,9 @@ spec:
     repoURL: {{ .Values.repoURL | required "repoURL is required" }}
     targetRevision: {{ .Values.targetRevision | default "HEAD" }}
     path: platform/airflow
-    helm:
       valueFiles:
-        - values-{{ .Values.environment | default "dev" }}.yaml
+        - values.yaml
+        - ../../env/{{ .Values.environment }}/airflow-values.yaml
   
   destination:
     server: {{ .Values.destinationServer | default "https://kubernetes.default.svc" }}

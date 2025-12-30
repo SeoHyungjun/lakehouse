@@ -15,7 +15,8 @@ spec:
     path: platform/iceberg-catalog
     helm:
       valueFiles:
-        - values-{{ .Values.environment | default "dev" }}.yaml
+        - values.yaml
+        - ../../env/{{ .Values.environment }}/iceberg-catalog-values.yaml
   
   destination:
     server: {{ .Values.destinationServer | default "https://kubernetes.default.svc" }}

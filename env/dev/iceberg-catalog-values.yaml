@@ -1,0 +1,6 @@
+catalog:
+  warehouse: s3://lakehouse-dev-warehouse/
+  s3:
+    endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
+    accessKeyId: admin
+    secretAccessKey: changeme123
