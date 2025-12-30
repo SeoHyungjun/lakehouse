@@ -1621,6 +1621,50 @@ terraform destroy -var-file=../env/dev/terraform.tfvars
 - **Iceberg Slack**: https://apache-iceberg.slack.com/
 - **Trino Slack**: https://trino.io/slack.html
 - **Airflow Slack**: https://apache-airflow.slack.com/
+## 8. 문제 해결 가이드
+
+### 8.1 Observability 설치 실패 (CRD Too Long Error)
+
+**증상**:
+ArgoCD에서 `observability` 애플리케이션이 `Sync Failed` 또는 `Missing` 상태로 멈춰있고, 상세 에러에 `metadata.annotations: Too long: must have at most 262144 bytes` 메시지가 나타남.
+
+**원인**:
+`kube-prometheus-stack` 차트에 포함된 CRD(Custom Resource Definitions) 파일들의 크기가 Kubernetes의 클라이언트 사이드 적용 제한(256KB)을 초과하여 발생합니다.
+
+**해결 방법**:
+
+**방법 1: ArgoCD 설정 확인 (권장)**
+`observability-application.yaml` 파일에 `ServerSideApply=true` 옵션이 설정되어 있는지 확인합니다. 이 옵션은 클라이언트 사이드 제한을 우회합니다.
+
+```yaml
+    syncOptions:
+      - ServerSideApply=true
+```
+
+**방법 2: 수동 설치 (즉시 해결)**
+ArgoCD가 계속 실패할 경우, 로컬 터미널에서 Helm으로 직접 설치하여 문제를 우회할 수 있습니다.
+
+```bash
+# 로컬에서 직접 Helm 차트 설치
+helm upgrade --install observability platform/observability \
+  -f platform/observability/values.yaml \
+  -f env/dev/observability-values.yaml \
+  --namespace lakehouse-platform \
+  --create-namespace
+```
+설치가 완료되면 ArgoCD가 자동으로 리소스를 인식하여 `Synced` 상태로 변경됩니다.
+
+### 8.2 포트 포워딩 연결 끊김 (Broken Pipe)
+
+**증상**:
+`kubectl port-forward` 사용 중 `E1231 ... error: broken pipe` 에러가 발생하며 연결이 끊어짐.
+
+**해결 방법**:
+MinIO와 같이 웹 소켓이나 리다이렉션이 많은 통신의 경우 `localhost` 대신 `127.0.0.1`을 명시적으로 사용하세요.
+
+```bash
+kubectl port-forward svc/minio -n lakehouse-platform 9000:9000 --address 127.0.0.1
+```
 
 ### 학습 자료
 
