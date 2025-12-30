@@ -28,6 +28,7 @@ trino:
       s3.path-style-access=true
       s3.aws-access-key=admin
       s3.aws-secret-key=changeme123
+      s3.region=us-east-1
   secrets:
     s3:
       accessKeyId: admin
