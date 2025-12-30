@@ -136,6 +136,9 @@ airflow:
       value: "KubernetesExecutor"
     - name: AIRFLOW__KUBERNETES__NAMESPACE
       value: "lakehouse-platform"
+    # Force correct DB connection string to bypass potential Secret generation issues
+    - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+      value: "postgresql://airflow:airflow@airflow-postgresql.lakehouse-platform:5432/airflow"
 
   # Extra environment variables from secrets
   extraEnvFrom: null
