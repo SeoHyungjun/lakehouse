@@ -34,12 +34,13 @@ spec:
       - ServerSideApply=true
       - Validate=false
       - SkipDryRunOnMissingResource=true
+      - Replace=true
     retry:
-      limit: 10
+      limit: 20
       backoff:
-        duration: 20s
+        duration: 30s
         factor: 2
-        maxDuration: 5m
+        maxDuration: 10m
   
   ignoreDifferences:
     - group: apps
