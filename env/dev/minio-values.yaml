@@ -1,4 +1,7 @@
-rootUser: admin
-rootPassword: changeme123
-mode: standalone
-replicas: 1
+minio:
+  mode: standalone
+  replicas: 1
+  rootUser: admin
+  rootPassword: changeme123
+  persistence:
+    size: 10Gi
