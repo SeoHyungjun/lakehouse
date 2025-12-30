@@ -60,6 +60,8 @@ airflow:
   # PostgreSQL (metadata database)
   postgresql:
     enabled: true
+    image:
+      tag: "15"
     auth:
       username: airflow
       password: airflow
