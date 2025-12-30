@@ -1,4 +1,22 @@
 trino:
+  server:
+    coordinator:
+      jvm:
+        maxHeapSize: "1G"
+      config:
+        query:
+          max-memory: "1GB"
+      resources:
+        requests:
+          memory: 1.5Gi
+          cpu: 500m
+    worker:
+      jvm:
+        maxHeapSize: "1G"
+      resources:
+        requests:
+          memory: 1.5Gi
+          cpu: 500m
   additionalCatalogs:
     iceberg: |
       connector.name=iceberg

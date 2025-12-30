@@ -1,3 +1,10 @@
+image:
+  repository: tabulario/iceberg-rest
+  tag: "latest"
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 100m
 catalog:
   warehouse: s3://lakehouse-dev-warehouse/
   s3:

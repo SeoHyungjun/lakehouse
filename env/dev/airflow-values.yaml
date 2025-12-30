@@ -1,0 +1,16 @@
+airflow:
+  webserver:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  scheduler:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  workers:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
