@@ -59,10 +59,9 @@ airflow:
       periodSeconds: 20
     
     startupProbe:
-      initialDelaySeconds: 60
       timeoutSeconds: 30
-      failureThreshold: 10
-      periodSeconds: 20
+      failureThreshold: 60
+      periodSeconds: 10
 
   # Scheduler configuration
   scheduler:
