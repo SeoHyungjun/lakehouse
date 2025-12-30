@@ -119,17 +119,8 @@ kube-prometheus-stack:
       port: 80
     
     # Datasources
-    datasources:
-      datasources.yaml:
-        apiVersion: 1
-        datasources:
-          - name: Prometheus
-            type: prometheus
-            url: http://kube-prometheus-stack-prometheus.lakehouse-platform.svc.cluster.local:9090
-            access: proxy
-            isDefault: true
-            jsonData:
-              timeInterval: 30s
+    # Datasources - Auto-configured by kube-prometheus-stack defaultDatasourceEnabled: true
+    datasources: {}
     
     # Dashboard providers
     dashboardProviders:
