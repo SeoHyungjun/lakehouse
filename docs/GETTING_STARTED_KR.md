@@ -174,7 +174,7 @@ kubectl port-forward -n argocd svc/argocd-server 8082:80 &
 # 4. MinIO (Object Storage)
 # 접속: http://127.0.0.1:9001 (admin / changeme123)
 # 주의: macOS에서는 localhost 대신 127.0.0.1을 명시해야 접속이 원활할 수 있습니다.
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 9001:9001 --address 127.0.0.1 &
+kubectl port-forward -n lakehouse-platform svc/minio-console 9001:9001 --address 127.0.0.1 &
 
 # 5. Grafana (Dashboard)
 # 접속: http://localhost:3000 (admin / admin)
