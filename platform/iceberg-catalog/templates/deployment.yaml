@@ -43,12 +43,12 @@ spec:
         - name: CATALOG_S3_ACCESS__KEY__ID
           valueFrom:
             secretKeyRef:
-              name: {{ include "iceberg-catalog.fullname" . }}-s3
+              name: {{ .Values.catalog.s3.existingSecret | default (printf "%s-s3" (include "iceberg-catalog.fullname" .)) }}
               key: accessKeyId
         - name: CATALOG_S3_SECRET__ACCESS__KEY
           valueFrom:
             secretKeyRef:
-              name: {{ include "iceberg-catalog.fullname" . }}-s3
+              name: {{ .Values.catalog.s3.existingSecret | default (printf "%s-s3" (include "iceberg-catalog.fullname" .)) }}
               key: secretAccessKey
         - name: CATALOG_S3_PATH__STYLE__ACCESS
           value: {{ .Values.catalog.s3.pathStyleAccess | quote }}
@@ -60,13 +60,13 @@ spec:
         - name: CATALOG_JDBC_USER
           valueFrom:
             secretKeyRef:
-              name: {{ include "iceberg-catalog.fullname" . }}-jdbc
+              name: {{ .Values.catalog.jdbc.existingSecret | default (printf "%s-jdbc" (include "iceberg-catalog.fullname" .)) }}
               key: username
               optional: true
         - name: CATALOG_JDBC_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ include "iceberg-catalog.fullname" . }}-jdbc
+              name: {{ .Values.catalog.jdbc.existingSecret | default (printf "%s-jdbc" (include "iceberg-catalog.fullname" .)) }}
               key: password
               optional: true
         {{- end }}

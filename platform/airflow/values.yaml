@@ -12,6 +12,10 @@ airflow:
   # Executor type: KubernetesExecutor for container-based jobs
   # Reference: contracts/workflow-orchestration.md section 5.1
   executor: "KubernetesExecutor"
+  
+  # Secrets
+  fernetKeySecretName: airflow-fernet-key
+  webserverSecretKeySecretName: airflow-webserver-secret
 
   # Image configuration
   images:
@@ -83,8 +87,9 @@ airflow:
       repository: bitnami/postgresql
       tag: "latest"
     auth:
+      existingSecret: postgres-creds
       username: airflow
-      password: airflow
+      password: ""
       database: airflow
     primary:
       persistence:
@@ -157,7 +162,10 @@ airflow:
       value: "lakehouse-platform"
     # Force correct DB connection string to bypass potential Secret generation issues
     - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
-      value: "postgresql://airflow:airflow@airflow-postgresql.lakehouse-platform:5432/airflow"
+      valueFrom:
+        secretKeyRef:
+          name: airflow-db-connection
+          key: connection
 
   # Extra environment variables from secrets
   extraEnvFrom: null

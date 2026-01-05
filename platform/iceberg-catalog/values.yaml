@@ -33,9 +33,10 @@ catalog:
   s3:
     # DNS-based endpoint - references MinIO service
     endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
-    # Credentials - should be overridden via environment-specific values or external secrets
-    accessKeyId: admin
-    secretAccessKey: changeme123
+    # Credentials - using SealedSecret 'minio-creds'
+    existingSecret: "minio-creds"
+    accessKeyId: ""
+    secretAccessKey: ""
     # Path-style access required for MinIO compatibility
     pathStyleAccess: true
   
@@ -51,7 +52,8 @@ catalog:
     #   MySQL: jdbc:mysql://mysql.lakehouse-platform.svc.cluster.local:3306/iceberg
     uri: jdbc:sqlite:file:/data/iceberg-catalog.db
     driver: org.sqlite.JDBC
-    # Credentials (optional, not needed for SQLite)
+    # Credentials
+    existingSecret: "postgres-creds"
     username: ""
     password: ""
   

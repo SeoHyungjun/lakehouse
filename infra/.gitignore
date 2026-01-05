@@ -32,3 +32,4 @@ terraform.rc
 # Ignore any files with 'secret' in the name
 *secret*
 *private*
+!modules/sealed-secrets/

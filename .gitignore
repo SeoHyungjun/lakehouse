@@ -34,6 +34,7 @@ env/**/secrets.yaml
 env/**/secrets.yml
 env/**/*.secret
 env/**/.env.local
+.env
 
 # Kubernetes secrets (if generated locally)
 *.secret.yaml

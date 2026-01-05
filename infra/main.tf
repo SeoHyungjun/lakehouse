@@ -20,6 +20,10 @@ terraform {
       source  = "hashicorp/local"
       version = "~> 2.5.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.12.0"
+    }
   }
 }
 
@@ -32,6 +36,25 @@ module "cluster" {
   cluster_version = var.cluster_version
   node_count      = var.node_count
   tags            = var.tags
+}
+
+# Provider: Helm
+# Configures the Helm provider to use the cluster created above
+provider "helm" {
+  kubernetes {
+    host                   = module.cluster.cluster_endpoint
+    client_certificate     = module.cluster.client_certificate
+    client_key             = module.cluster.client_key
+    cluster_ca_certificate = module.cluster.cluster_ca_certificate
+  }
+}
+
+# Module: Sealed Secrets
+# Installs the Sealed Secrets controller
+module "sealed_secrets" {
+  source = "./modules/sealed-secrets"
+  
+  depends_on = [module.cluster]
 }
 
 # Module: Network

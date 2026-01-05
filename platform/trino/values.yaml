@@ -112,12 +112,12 @@ trino:
     - name: S3_ACCESS_KEY
       valueFrom:
         secretKeyRef:
-          name: trino-s3-credentials
+          name: minio-creds
           key: accessKeyId
     - name: S3_SECRET_KEY
       valueFrom:
         secretKeyRef:
-          name: trino-s3-credentials
+          name: minio-creds
           key: secretAccessKey
 
   # Authentication configuration
@@ -175,9 +175,9 @@ trino:
 
 # Secrets to be created
 # These are used to populate the trino-s3-credentials secret
-secrets:
-  s3:
-    # S3 credentials for Iceberg catalog
-    # These should be overridden in environment-specific values
-    accessKeyId: admin
-    secretAccessKey: changeme123
+# Secrets to be created
+# Disabled in favor of SealedSecret 'minio-creds'
+secrets: null
+#   s3:
+#     accessKeyId: admin
+#     secretAccessKey: changeme123

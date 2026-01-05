@@ -36,8 +36,10 @@ ingress:
   tls: []
 
 # Root credentials (should be overridden via environment-specific values)
-rootUser: admin
-rootPassword: changeme123
+# Using SealedSecrets
+rootUser: ""
+rootPassword: ""
+existingSecret: "minio-creds"
 
 # Buckets to create on startup
 buckets:
