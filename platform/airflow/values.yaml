@@ -162,8 +162,7 @@ airflow:
       value: "lakehouse-platform"
 
   # Extra environment variables
-  extraEnv:
-    # Force correct DB connection string
+  extraEnv: |
     - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
       valueFrom:
         secretKeyRef:
