@@ -50,3 +50,11 @@ storage_name            = "lakehouse-dev-storage"
 storage_class           = "standard"
 enable_object_storage   = true
 object_storage_size_gb  = 10  # Small size for development
+
+# ============================================================================
+# Secret Configuration
+# ============================================================================
+# Path to the backup master key.
+# Terraform will use this key to restore the sealed-secrets controller state.
+# Default: "" (Generates a new key on cluster creation)
+master_key_path = "../env/dev/master.key"

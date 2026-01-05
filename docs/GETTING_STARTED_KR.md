@@ -109,7 +109,39 @@ cd lakehouse
 ls -la
 ```
 
-### 2.3 개발 환경 배포 (로컬)
+### 2.3 비밀 설정 (필수)
+
+이 프로젝트는 **Sealed Secrets**를 사용하여 비밀(Secret)을 관리합니다. 배포 전에 반드시 비밀 설정을 완료해야 합니다.
+
+**1. 환경 변수 설정**:
+```bash
+cp .env.example .env
+# .env 파일을 열어 실제 비밀번호를 입력하세요 (Git에 저장되지 않음)
+vi .env
+```
+
+**2. 마스터 키 설정 (기존 환경 복제 시)**:
+팀 관리자로부터 `master.key` 파일을 받아 해당 환경 디렉토리에 복사합니다.
+```bash
+# 개발 환경 예시
+cp master.key env/dev/master.key
+```
+
+**3. 비밀 생성 및 커밋**:
+(최초 설정이거나 비밀번호 변경 시에만 필요)
+```bash
+# 로컬 .env 값을 기반으로 암호화된 파일 생성
+./scripts/generate-secrets.sh
+
+# 생성된 파일을 Git에 커밋 (ArgoCD가 이를 사용함)
+git add platform/**/templates/*sealed-secret.yaml
+git commit -m "chore: update secrets"
+git push
+```
+
+> **상세 가이드**: 더 자세한 내용은 [비밀 관리 가이드](SECRET_MANAGEMENT_KR.md)를 참고하세요.
+
+### 2.4 개발 환경 배포 (로컬)
 
 ```bash
 # 한 번의 명령으로 전체 플랫폼 배포
@@ -123,7 +155,7 @@ ls -la
 # ✓ Platform ready
 ```
 
-### 2.4 플랫폼 접속
+### 2.5 플랫폼 접속
 
 ```bash
 # 1. Trino (SQL Query Engine)
@@ -149,7 +181,7 @@ kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 9001:9001 --addre
 kubectl port-forward -n lakehouse-platform svc/observability-grafana 3000:80 &
 ```
 
-### 2.5 첫 번째 쿼리 실행
+### 2.6 첫 번째 쿼리 실행
 
 ```bash
 # Trino CLI 설치

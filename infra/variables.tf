@@ -139,3 +139,9 @@ variable "object_storage_size_gb" {
     error_message = "Object storage size must be at least 1 GB"
   }
 }
+
+variable "master_key_path" {
+  description = "Path to the sealed secrets master key file (optional). If provided, this key will be restored."
+  type        = string
+  default     = ""
+}

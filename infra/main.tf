@@ -54,7 +54,8 @@ provider "helm" {
 module "sealed_secrets" {
   source = "./modules/sealed-secrets"
   
-  depends_on = [module.cluster]
+  master_key_path = var.master_key_path
+  depends_on      = [module.cluster]
 }
 
 # Module: Network

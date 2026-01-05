@@ -9,3 +9,9 @@ variable "namespace" {
   type        = string
   default     = "sealed-secrets"
 }
+
+variable "master_key_path" {
+  description = "Path to the master key file (optional). If provided, this key will be restored."
+  type        = string
+  default     = ""
+}

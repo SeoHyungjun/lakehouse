@@ -39,6 +39,7 @@ env/**/.env.local
 # Kubernetes secrets (if generated locally)
 *.secret.yaml
 *.secret.yml
+*.key
 
 # ============================================
 # IDE and Editor Files
