@@ -166,7 +166,7 @@ airflow:
     metadataSecretName: airflow-db-connection
 
   # Extra environment variables
-  extraEnv: []
+  extraEnv: ""
 
   # Extra environment variables from secrets
   extraEnvFrom: null
