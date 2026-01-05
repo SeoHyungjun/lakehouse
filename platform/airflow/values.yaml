@@ -161,13 +161,12 @@ airflow:
     - name: AIRFLOW__KUBERNETES__NAMESPACE
       value: "lakehouse-platform"
 
+  # Use existing secret for metadata connection
+  data:
+    metadataSecretName: airflow-db-connection
+
   # Extra environment variables
-  extraEnv: |
-    - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
-      valueFrom:
-        secretKeyRef:
-          name: airflow-db-connection
-          key: connection
+  extraEnv: []
 
   # Extra environment variables from secrets
   extraEnvFrom: null
