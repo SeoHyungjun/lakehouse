@@ -111,6 +111,10 @@ airflow:
       persistence:
         enabled: true
         size: 8Gi
+      initdb:
+        scripts:
+          create-iceberg-db.sql: |
+            CREATE DATABASE iceberg;
 
   # Redis (disabled for KubernetesExecutor)
   redis:
