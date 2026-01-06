@@ -36,7 +36,7 @@ trino:
         
         # Additional coordinator-specific settings
         http-server.http.port: 8080
-        discovery.uri: http://localhost:8080
+        discovery.uri: http://trino.lakehouse-platform.svc.cluster.local:8080
       
       resources:
         requests:

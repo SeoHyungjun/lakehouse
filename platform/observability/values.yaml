@@ -176,7 +176,7 @@ kube-prometheus-stack:
         
         # Airflow dashboard
         airflow:
-          gnetId: 13629
+          gnetId: 11022
           revision: 1
           datasource: Prometheus
       
