@@ -233,3 +233,36 @@ airflow:
       limits:
         memory: 512Mi
         cpu: 200m
+
+  # Create user job configuration
+  createUserJob:
+    enabled: true
+    useHelmHooks: false
+    applyCustomEnv: true
+    # Override args to use password from environment variable
+    args:
+      - "bash"
+      - "-c"
+      - |-
+        exec \
+        airflow users create "$@"
+      - --
+      - "-r"
+      - "{{ .Values.webserver.defaultUser.role }}"
+      - "-u"
+      - "{{ .Values.webserver.defaultUser.username }}"
+      - "-e"
+      - "{{ .Values.webserver.defaultUser.email }}"
+      - "-f"
+      - "{{ .Values.webserver.defaultUser.firstName }}"
+      - "-l"
+      - "{{ .Values.webserver.defaultUser.lastName }}"
+      - "-p"
+      - "$AIRFLOW_ADMIN_PASSWORD"
+    # Inject password from secret as environment variable
+    env:
+      - name: AIRFLOW_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: airflow-admin-password
+            key: admin-password
