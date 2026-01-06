@@ -119,10 +119,11 @@ generate_sealed_secret "airflow-fernet-key" \
     --from-literal=fernet-key="${AIRFLOW_FERNET_KEY}"
 
 # --- Airflow Admin Password ---
-# Username is 'admin' (hardcoded in values)
+# Username from env
 generate_sealed_secret "airflow-admin-password" \
     "${ROOT_DIR}/platform/secrets/admin-password-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
+    --from-literal=admin-user="${AIRFLOW_ADMIN_USER}" \
     --from-literal=admin-password="${AIRFLOW_ADMIN_PASSWORD}"
 
 # --- Airflow DB Connection String ---
@@ -136,11 +137,12 @@ generate_sealed_secret "airflow-db-connection" \
     --from-literal=connection="${AIRFLOW_CONN_STRING}"
 
 # --- Grafana Admin Password ---
-# Username is 'admin' (hardcoded in values)
+# Username from env
 generate_sealed_secret "grafana-admin-password" \
     "${ROOT_DIR}/platform/secrets/grafana-admin-password-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
-    --from-literal=admin-password="${GRAFANA_ADMIN_PASSWORD}"
+    --from-literal=admin-password="${GRAFANA_ADMIN_PASSWORD}" \
+    --from-literal=admin-user="${GRAFANA_ADMIN_USER}"
 
 
 log_info "All secrets generated successfully!"

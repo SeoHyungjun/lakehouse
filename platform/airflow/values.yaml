@@ -47,7 +47,7 @@ airflow:
     # Note: Password is set from secret 'airflow-admin-password'
     # After first login, change password through the UI
     defaultUser:
-      enabled: true
+      enabled: false
       role: Admin
       username: admin
       email: admin@example.com
@@ -93,10 +93,21 @@ airflow:
       repository: bitnami/postgresql
       tag: "latest"
     auth:
-      # username from Secret 'postgres-creds' key 'username'
       existingSecret: postgres-creds
       database: airflow
     primary:
+      extraEnvVars:
+      extraEnvVars:
+        - name: POSTGRESQL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-creds
+              key: username
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-creds
+              key: password
       persistence:
         enabled: true
         size: 8Gi

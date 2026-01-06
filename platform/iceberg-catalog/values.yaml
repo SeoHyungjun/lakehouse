@@ -69,7 +69,17 @@ catalog:
     catalogId: ""  # AWS Account ID (optional)
 
 # Additional environment variables
-extraEnv: []
+extraEnv:
+  - name: CATALOG_JDBC_USER
+    valueFrom:
+      secretKeyRef:
+        name: postgres-creds
+        key: username
+  - name: CATALOG_JDBC_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: postgres-creds
+        key: password
 # - name: CUSTOM_VAR
 #   value: "custom-value"
 

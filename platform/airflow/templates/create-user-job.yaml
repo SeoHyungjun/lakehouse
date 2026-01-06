@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-create-user
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    # Wait for webserver/scheduler to be ready-ish, but mainly we need DB.
+    # We can rely on airflow core's wait-for-db logic usually.
+spec:
+  template:
+    metadata:
+      name: {{ .Release.Name }}-create-user
+    spec:
+      serviceAccountName: {{ .Release.Name }}-create-user-job
+      securityContext:
+        runAsUser: 50000
+        fsGroup: 0
+      containers:
+        - name: create-user
+          image: "{{ .Values.airflow.images.airflow.repository }}:{{ .Values.airflow.images.airflow.tag }}"
+          imagePullPolicy: {{ .Values.airflow.images.airflow.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "Waiting for database..."
+              airflow db check
+              
+              if airflow users list | grep -q "${AIRFLOW_ADMIN_USER}"; then
+                echo "User ${AIRFLOW_ADMIN_USER} already exists. Skipping creation."
+              else
+                echo "Creating user ${AIRFLOW_ADMIN_USER}..."
+                airflow users create \
+                  --username "${AIRFLOW_ADMIN_USER}" \
+                  --password "${AIRFLOW_ADMIN_PASSWORD}" \
+                  --firstname Admin \
+                  --lastname User \
+                  --role Admin \
+                  --email admin@example.com
+              fi
+          env:
+            - name: AIRFLOW_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-admin-password
+                  key: admin-user
+            - name: AIRFLOW_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-admin-password
+                  key: admin-password
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-db-connection
+                  key: connection
+            - name: AIRFLOW__CORE__FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-fernet-key
+                  key: fernet-key
+      restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-create-user-job
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded

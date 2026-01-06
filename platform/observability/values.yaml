@@ -109,10 +109,10 @@ kube-prometheus-stack:
     enabled: true
 
     # Use SealedSecret for admin password
-    # Username defaults to 'admin'
-    adminPasswordSecret:
-      name: grafana-admin-password
-      key: admin-password
+    admin:
+      existingSecret: grafana-admin-password
+      userKey: admin-user
+      passwordKey: admin-password
     
     # Persistence
     persistence:
