@@ -10,3 +10,7 @@ catalog:
   s3:
     endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
     existingSecret: "minio-creds"
+  jdbc:
+    uri: jdbc:postgresql://airflow-postgresql.lakehouse-platform.svc.cluster.local:5432/iceberg
+    driver: org.postgresql.Driver
+    existingSecret: "postgres-creds"
