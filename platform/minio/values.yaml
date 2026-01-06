@@ -41,9 +41,6 @@ minio:
   rootUser: ""
   rootPassword: ""
   existingSecret: "minio-creds"
-  environment:
-    MINIO_SERVER_URL: "http://minio.lakehouse-platform.svc.cluster.local:9000"
-    MINIO_BROWSER_REDIRECT_URL: "http://127.0.0.1:9001"
 
 # Buckets to create on startup
 buckets:
