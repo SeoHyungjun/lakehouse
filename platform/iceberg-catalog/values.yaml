@@ -8,6 +8,10 @@ image:
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
+initContainers:
+  - name: wait-for-postgres
+    image: busybox:1.31.1
+    command: ['sh', '-c', 'until nc -z airflow-postgresql.lakehouse-platform.svc.cluster.local 5432; do echo waiting for postgres; sleep 2; done']
 nameOverride: ""
 fullnameOverride: ""
 
