@@ -37,9 +37,10 @@ ingress:
 
 # Root credentials (should be overridden via environment-specific values)
 # Using SealedSecrets
-rootUser: ""
-rootPassword: ""
-existingSecret: "minio-creds"
+minio:
+  rootUser: ""
+  rootPassword: ""
+  existingSecret: "minio-creds"
 
 # Buckets to create on startup
 buckets:
