@@ -93,7 +93,7 @@ airflow:
       repository: bitnami/postgresql
       tag: "latest"
     auth:
-      username: rubicon
+      # username from Secret 'postgres-creds' key 'username'
       existingSecret: postgres-creds
       database: airflow
     primary:
@@ -248,15 +248,15 @@ airflow:
         airflow users create "$@"
       - --
       - "-r"
-      - "{{ .Values.webserver.defaultUser.role }}"
+      - "{{ .Values.airflow.webserver.defaultUser.role }}"
       - "-u"
-      - "{{ .Values.webserver.defaultUser.username }}"
+      - "{{ .Values.airflow.webserver.defaultUser.username }}"
       - "-e"
-      - "{{ .Values.webserver.defaultUser.email }}"
+      - "{{ .Values.airflow.webserver.defaultUser.email }}"
       - "-f"
-      - "{{ .Values.webserver.defaultUser.firstName }}"
+      - "{{ .Values.airflow.webserver.defaultUser.firstName }}"
       - "-l"
-      - "{{ .Values.webserver.defaultUser.lastName }}"
+      - "{{ .Values.airflow.webserver.defaultUser.lastName }}"
       - "-p"
       - "$AIRFLOW_ADMIN_PASSWORD"
     # Inject password from secret as environment variable

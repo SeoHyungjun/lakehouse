@@ -142,19 +142,6 @@ generate_sealed_secret "grafana-admin-password" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=admin-password="${GRAFANA_ADMIN_PASSWORD}"
 
-# ==============================================================================
-# ArgoCD Secrets (argocd namespace)
-# ==============================================================================
-
-log_info "Generating ArgoCD secrets..."
-
-# --- ArgoCD Admin Password ---
-# Username is 'admin' (default)
-generate_sealed_secret "argocd-secret" \
-    "${ROOT_DIR}/platform/argocd/secrets/argocd-secret-sealed-secret.yaml" \
-    "argocd" \
-    --from-literal=admin.password="${ARGOCD_ADMIN_PASSWORD}"
-
 
 log_info "All secrets generated successfully!"
 echo "Don't forget to commit the new SealedSecret YAML files."
