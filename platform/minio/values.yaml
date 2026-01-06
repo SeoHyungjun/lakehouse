@@ -41,6 +41,9 @@ minio:
   rootUser: ""
   rootPassword: ""
   existingSecret: "minio-creds"
+  environment:
+    MINIO_SERVER_URL: "http://localhost:9000"
+    MINIO_BROWSER_REDIRECT_URL: "http://localhost:9001"
 
 # Buckets to create on startup
 buckets:
