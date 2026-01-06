@@ -1,8 +1,8 @@
 minio:
   mode: standalone
   replicas: 1
-  rootUser: admin
-  rootPassword: changeme123
+  # Use SealedSecret for credentials
+  existingSecret: "minio-creds"
   persistence:
     size: 10Gi
   resources:

@@ -1,7 +1,7 @@
 variable "chart_version" {
   description = "Version of the Sealed Secrets Helm chart"
   type        = string
-  default     = "2.13.3"
+  default     = "2.18.0"
 }
 
 variable "namespace" {

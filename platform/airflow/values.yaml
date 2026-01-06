@@ -24,10 +24,14 @@ airflow:
       tag: "2.8.0-python3.11"
       pullPolicy: IfNotPresent
 
+  # Use existing secret for admin password
+  # The secret should have key: admin-password
+  adminUserSecretName: "airflow-admin-password"
+
   # Webserver configuration
   webserver:
     replicas: 1
-    
+
     resources:
       requests:
         memory: 512Mi
@@ -35,11 +39,13 @@ airflow:
       limits:
         memory: 1Gi
         cpu: 500m
-    
+
     service:
       type: ClusterIP
-    
-    # Default user
+
+    # Default user credentials
+    # Note: Password is set from secret 'airflow-admin-password'
+    # After first login, change password through the UI
     defaultUser:
       enabled: true
       role: Admin
@@ -47,21 +53,21 @@ airflow:
       email: admin@example.com
       firstName: Admin
       lastName: User
-      password: admin
-    
+      password: ""  # Set from secret
+
     # Probes configuration
     livenessProbe:
       initialDelaySeconds: 60
       timeoutSeconds: 30
       failureThreshold: 5
       periodSeconds: 20
-    
+
     readinessProbe:
       initialDelaySeconds: 60
       timeoutSeconds: 30
       failureThreshold: 5
       periodSeconds: 20
-    
+
     startupProbe:
       timeoutSeconds: 30
       failureThreshold: 60
@@ -87,9 +93,8 @@ airflow:
       repository: bitnami/postgresql
       tag: "latest"
     auth:
+      username: rubicon
       existingSecret: postgres-creds
-      username: airflow
-      password: ""
       database: airflow
     primary:
       persistence:

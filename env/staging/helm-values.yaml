@@ -27,9 +27,9 @@ minio:
     limits:
       memory: 2Gi
       cpu: 1000m
-  
-  # Use secrets for credentials in staging
-  existingSecret: minio-credentials
+
+  # Use SealedSecret for credentials
+  existingSecret: "minio-creds"
   
   buckets:
     - name: lakehouse-staging-warehouse
@@ -62,13 +62,11 @@ icebergCatalog:
     size: 20Gi
     storageClass: gp3
   
-  config:
+  catalog:
     warehouse: s3://lakehouse-staging-warehouse/
     s3:
       endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
-      # Use external secrets in staging
-      accessKeyIdSecret: minio-credentials
-      secretAccessKeySecret: minio-credentials
+      existingSecret: "minio-creds"
   
   affinity:
     podAntiAffinity:

@@ -143,31 +143,93 @@ validate_environment() {
 # Step 1: Provision infrastructure with Terraform
 provision_infrastructure() {
     log_info "Step 1: Provisioning infrastructure with Terraform..."
-    
+
     cd "${TERRAFORM_DIR}"
-    
+
     # Initialize Terraform
     log_info "Initializing Terraform..."
     terraform init || error_exit "Terraform init failed"
-    
+
     # Validate Terraform configuration
     log_info "Validating Terraform configuration..."
     terraform validate || error_exit "Terraform validation failed"
-    
-    # Plan Terraform changes
-    log_info "Planning Terraform changes..."
-    terraform plan -var-file="${ENV_VARS_FILE}" -out=tfplan || error_exit "Terraform plan failed"
-    
-    # Apply Terraform changes
-    log_info "Applying Terraform changes..."
-    terraform apply tfplan || error_exit "Terraform apply failed"
-    
-    # Clean up plan file
-    rm -f tfplan
-    
+
+    if [ "${ENVIRONMENT}" = "dev" ]; then
+        # For dev environment, apply in two stages to avoid rate limits:
+        # 1. Create cluster first
+        # 2. Pull and load images
+        # 3. Apply remaining resources
+
+        log_info "Applying cluster resources..."
+        terraform apply -var-file="${ENV_VARS_FILE}" -target=module.cluster.kind_cluster.this -auto-approve || error_exit "Terraform apply (cluster) failed"
+
+        # Pre-load required Docker images to avoid rate limits
+        log_info "Pre-loading Docker images to avoid rate limits..."
+
+        # Define required images
+        IMAGES=(
+            # Infrastructure components
+            "docker.io/bitnami/sealed-secrets-controller:0.34.0"
+            "docker.io/bitnami/postgresql:latest"
+            "quay.io/argoproj/argocd:v2.9.3"
+            "quay.io/minio/minio:RELEASE.2023-09-30T07-02-29Z"
+            "quay.io/minio/mc:RELEASE.2023-09-29T16-41-22Z"
+
+            # Platform components
+            "docker.io/tabulario/iceberg-rest:latest"
+            "docker.io/trinodb/trino:440"
+            "docker.io/apache/airflow:2.8.0-python3.11"
+
+            # Observability components (Prometheus, Grafana, etc.)
+            "quay.io/prometheus/prometheus:v2.48.0"
+            "docker.io/grafana/grafana:10.2.2"
+            "quay.io/kiwigrid/k8s-sidecar:1.25.2"
+            "docker.io/library/busybox:1.31.1"
+            "docker.io/curlimages/curl:7.85.0"
+            "quay.io/prometheus/alertmanager:v0.26.0"
+            "quay.io/prometheus/node-exporter:v1.7.0"
+            "quay.io/prometheus-operator/prometheus-operator:v0.70.0"
+            "quay.io/prometheus-operator/prometheus-config-reloader:v0.70.0"
+        )
+
+        # Pull images that don't exist locally
+        for image in "${IMAGES[@]}"; do
+            # Normalize image name for comparison (remove docker.io/ and library/)
+            image_name=$(echo "$image" | sed 's|docker.io/||' | sed 's|library/||')
+            if ! docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "$image_name"; then
+                log_info "Pulling $image..."
+                docker pull "$image" || log_warn "Failed to pull $image"
+            else
+                log_info "$image already exists, skipping pull"
+            fi
+        done
+
+        # Load images into kind cluster
+        for image in "${IMAGES[@]}"; do
+            log_info "Loading $image into kind cluster..."
+            kind load docker-image "$image" --name "lakehouse-${ENVIRONMENT}" || log_warn "Failed to load $image"
+        done
+
+        log_success "Docker images pre-loaded"
+
+        # Apply remaining resources
+        log_info "Applying remaining infrastructure resources..."
+        terraform apply -var-file="${ENV_VARS_FILE}" -auto-approve || error_exit "Terraform apply (remaining) failed"
+    else
+        # For non-dev environments, apply everything at once
+        log_info "Planning Terraform changes..."
+        terraform plan -var-file="${ENV_VARS_FILE}" -out=tfplan || error_exit "Terraform plan failed"
+
+        log_info "Applying Terraform changes..."
+        terraform apply tfplan || error_exit "Terraform apply failed"
+
+        # Clean up plan file
+        rm -f tfplan
+    fi
+
     log_success "Infrastructure provisioned successfully"
     echo ""
-    
+
     cd "${PROJECT_ROOT}"
 }
 
@@ -297,17 +359,26 @@ sync_argocd_applications() {
         # Port-forward to ArgoCD server
         kubectl port-forward svc/argocd-server -n "${ARGOCD_NAMESPACE}" 8080:443 > /dev/null 2>&1 &
         PORT_FORWARD_PID=$!
-        sleep 5
-        
+
+        # Wait for port-forward to be ready
+        log_info "Waiting for port-forward to be ready..."
+        for i in {1..30}; do
+            if curl -k -s https://localhost:8080/healthz > /dev/null 2>&1; then
+                break
+            fi
+            sleep 1
+        done
+
         # Login to ArgoCD
-        argocd login localhost:8080 \
+        log_info "Logging in to ArgoCD..."
+        ARGOCD_OPTS="--grpc-web" argocd login localhost:8080 \
             --username admin \
             --password "${ARGOCD_PASSWORD}" \
             --insecure || log_warn "ArgoCD CLI login failed"
         
         # Sync all applications
         log_info "Syncing all applications..."
-        argocd app sync --all || log_warn "Some applications failed to sync"
+        argocd app sync --all-namespaces || log_warn "Some applications failed to sync"
         
         # Kill port-forward
         kill ${PORT_FORWARD_PID} 2>/dev/null || true

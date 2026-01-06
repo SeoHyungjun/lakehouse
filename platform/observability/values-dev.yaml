@@ -54,9 +54,12 @@ kube-prometheus-stack:
   # Grafana - minimal resources
   grafana:
     enabled: true
-    
-    # Default admin password for development
-    adminPassword: admin
+
+    # Use SealedSecret for admin password
+    # Username defaults to 'admin'
+    adminPasswordSecret:
+      name: grafana-admin-password
+      key: admin-password
     
     # Minimal persistence
     persistence:

@@ -169,7 +169,7 @@ kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8081:8080 &
 # 3. ArgoCD (GitOps Dashboard)
 # 접속: http://localhost:8082 (admin / 패스워드 확인 필요)
 # 패스워드 확인: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
-kubectl port-forward -n argocd svc/argocd-server 8082:80 &
+kubectl port-forward -n argocd svc/argocd-server 8082:443 &
 
 # 4. MinIO (Object Storage)
 # 접속: http://127.0.0.1:9001 (admin / changeme123)

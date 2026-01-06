@@ -15,9 +15,11 @@ resource "null_resource" "restore_key" {
     command = <<EOT
       # Create namespace if it doesn't exist
       kubectl create namespace ${var.namespace} --dry-run=client -o yaml | kubectl apply -f -
-      
-      # Apply the master key
-      kubectl apply -f ${var.master_key_path} -n ${var.namespace}
+
+      # Apply the master key only if it exists
+      if [ -f "${var.master_key_path}" ]; then
+        kubectl apply -f ${var.master_key_path} -n ${var.namespace}
+      fi
     EOT
     
     # We need to ensure kubectl is configured to talk to the correct cluster.

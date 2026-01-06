@@ -27,13 +27,8 @@ service:
   port: 9000
   consolePort: 9001
 
-# Root credentials - MUST be injected via Kubernetes secrets
-# DO NOT hardcode production credentials!
-# Use: kubectl create secret generic minio-credentials \
-#        --from-literal=rootUser=<user> \
-#        --from-literal=rootPassword=<password>
-rootUser: ${MINIO_ROOT_USER}
-rootPassword: ${MINIO_ROOT_PASSWORD}
+# Use SealedSecret for credentials
+existingSecret: "minio-creds"
 
 # Buckets to create automatically
 buckets:

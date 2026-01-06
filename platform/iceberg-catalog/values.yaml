@@ -4,7 +4,7 @@
 # Image configuration
 image:
   repository: tabulario/iceberg-rest
-  tag: "1.4.0"
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

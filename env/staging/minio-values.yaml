@@ -27,10 +27,8 @@ service:
   port: 9000
   consolePort: 9001
 
-# Root credentials (should be injected via secrets)
-# Use Kubernetes secrets or environment variables in production
-rootUser: admin
-rootPassword: staging-minio-password-456
+# Use SealedSecret for credentials
+existingSecret: "minio-creds"
 
 # Buckets to create automatically
 buckets:

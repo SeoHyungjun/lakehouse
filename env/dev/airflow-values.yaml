@@ -1,16 +1,69 @@
+# Development Environment - Airflow Configuration
+# Used by ArgoCD Application: platform/argocd/templates/airflow-application.yaml
+
 airflow:
+  # Webserver - minimal resources for development
+  # Note: Airflow webserver requires at least 1Gi to avoid OOMKilled
   webserver:
+    replicas: 1
     resources:
       requests:
-        cpu: 100m
-        memory: 256Mi
-  scheduler:
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-  workers:
-    resources:
-      requests:
-        cpu: 100m
         memory: 512Mi
+        cpu: 100m
+      limits:
+        memory: 1Gi
+        cpu: 250m
+
+  # Scheduler - minimal resources for development
+  scheduler:
+    replicas: 1
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 250m
+
+  # PostgreSQL - minimal resources for development
+  postgresql:
+    primary:
+      persistence:
+        enabled: true
+        size: 2Gi
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 250m
+
+  # DAGs - minimal persistence
+  dags:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+  # Airflow configuration - development settings
+  config:
+    core:
+      parallelism: 8
+      max_active_tasks_per_dag: 4
+      max_active_runs_per_dag: 4
+
+    webserver:
+      expose_config: "True"
+      rbac: "False"
+      authenticate: "False"
+
+    kubernetes:
+      delete_worker_pods: "True"
+      delete_worker_pods_on_failure: "False"
+
+    logging:
+      logging_level: "DEBUG"
+
+  # Triggerer - disabled for development
+  triggerer:
+    enabled: false

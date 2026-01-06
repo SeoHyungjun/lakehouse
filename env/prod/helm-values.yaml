@@ -27,9 +27,9 @@ minio:
     limits:
       memory: 8Gi
       cpu: 4000m
-  
-  # Production uses external secrets only
-  existingSecret: minio-prod-credentials
+
+  # Use SealedSecret for credentials
+  existingSecret: "minio-creds"
   
   buckets:
     - name: lakehouse-prod-warehouse
@@ -77,13 +77,11 @@ icebergCatalog:
     size: 100Gi
     storageClass: io2
   
-  config:
+  catalog:
     warehouse: s3://lakehouse-prod-warehouse/
     s3:
       endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
-      # Production uses external secrets
-      accessKeyIdSecret: minio-prod-credentials
-      secretAccessKeySecret: minio-prod-credentials
+      existingSecret: "minio-creds"
   
   affinity:
     podAntiAffinity:

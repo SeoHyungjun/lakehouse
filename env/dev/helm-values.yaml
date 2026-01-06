@@ -27,11 +27,10 @@ minio:
     limits:
       memory: 1Gi
       cpu: 500m
-  
-  # Development credentials (DO NOT use in production!)
-  rootUser: minioadmin
-  rootPassword: minioadmin
-  
+
+  # Use SealedSecret for credentials
+  existingSecret: "minio-creds"
+
   buckets:
     - name: lakehouse-dev-warehouse
       policy: none
@@ -56,12 +55,11 @@ icebergCatalog:
     enabled: true
     size: 5Gi
   
-  config:
+  catalog:
     warehouse: s3://lakehouse-dev-warehouse/
     s3:
       endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
-      accessKeyId: minioadmin
-      secretAccessKey: minioadmin
+      existingSecret: "minio-creds"
 
 # ============================================================================
 # Trino (Query Engine)
@@ -98,49 +96,20 @@ trino:
       iceberg.rest-catalog.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
       hive.s3.endpoint=http://minio.lakehouse-platform.svc.cluster.local:9000
       hive.s3.path-style-access=true
-      hive.s3.aws-access-key=minioadmin
-      hive.s3.aws-secret-key=minioadmin
+      s3.aws-access-key=${ENV:S3_ACCESS_KEY}
+      s3.aws-secret-key=${ENV:S3_SECRET_KEY}
 
-# ============================================================================
-# Airflow (Workflow Orchestration)
-# ============================================================================
-
-airflow:
-  executor: KubernetesExecutor
-  
-  webserver:
-    replicas: 1
-    resources:
-      requests:
-        memory: 512Mi
-        cpu: 250m
-      limits:
-        memory: 1Gi
-        cpu: 500m
-  
-  scheduler:
-    replicas: 1
-    resources:
-      requests:
-        memory: 512Mi
-        cpu: 250m
-      limits:
-        memory: 1Gi
-        cpu: 500m
-  
-  postgresql:
-    enabled: true
-    persistence:
-      size: 5Gi
-  
-  dags:
-    gitSync:
-      enabled: false  # Use local DAGs for development
-  
-  config:
-    logging:
-      remote_logging: false
-      logging_level: DEBUG
+  env:
+    - name: S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio-creds
+          key: accessKeyId
+    - name: S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio-creds
+          key: secretAccessKey
 
 # ============================================================================
 # Observability (Prometheus + Grafana)
@@ -162,7 +131,8 @@ observability:
   
   grafana:
     replicas: 1
-    adminPassword: admin  # Development only!
+    # adminPassword should be set via SealedSecret in production
+    # For development, use default and update after first login
     
     resources:
       requests:

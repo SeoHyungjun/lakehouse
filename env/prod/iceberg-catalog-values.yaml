@@ -3,10 +3,14 @@ image:
   tag: "latest"
 resources:
   requests:
-    memory: 256Mi
-    cpu: 100m
+    memory: 2Gi
+    cpu: 1000m
+  limits:
+    memory: 4Gi
+    cpu: 2000m
+
 catalog:
-  warehouse: s3://lakehouse-dev-warehouse/
+  warehouse: s3://lakehouse-prod-warehouse/
   s3:
     endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
     existingSecret: "minio-creds"

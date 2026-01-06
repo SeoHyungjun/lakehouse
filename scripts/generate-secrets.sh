@@ -80,44 +80,80 @@ generate_sealed_secret() {
 
 # 2. Generate Secrets
 
+# ==============================================================================
+# Platform Secrets (lakehouse-platform namespace)
+# Stored in platform/secrets/
+# ==============================================================================
+
+log_info "Generating platform secrets..."
+
 # --- MinIO ---
+# Used by: MinIO itself, Iceberg Catalog, Trino
 generate_sealed_secret "minio-creds" \
-    "${ROOT_DIR}/platform/minio/templates/sealed-secret.yaml" \
+    "${ROOT_DIR}/platform/secrets/minio-creds-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=rootUser="${MINIO_ROOT_USER}" \
     --from-literal=rootPassword="${MINIO_ROOT_PASSWORD}" \
     --from-literal=accessKeyId="${MINIO_ROOT_USER}" \
     --from-literal=secretAccessKey="${MINIO_ROOT_PASSWORD}"
 
-# --- Postgres (Shared) ---
-# Used by Airflow and Catalog
+# --- PostgreSQL ---
+# Used by: Airflow, Iceberg Catalog
 generate_sealed_secret "postgres-creds" \
-    "${ROOT_DIR}/platform/iceberg-catalog/templates/postgres-sealed-secret.yaml" \
+    "${ROOT_DIR}/platform/secrets/postgres-creds-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=username="${POSTGRES_USER}" \
     --from-literal=password="${POSTGRES_PASSWORD}" \
     --from-literal=postgres-password="${POSTGRES_PASSWORD}"
 
-# --- Airflow ---
+# --- Airflow Webserver Secret ---
 generate_sealed_secret "airflow-webserver-secret" \
-    "${ROOT_DIR}/platform/airflow/templates/webserver-sealed-secret.yaml" \
+    "${ROOT_DIR}/platform/secrets/webserver-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=webserver-secret-key="${AIRFLOW_WEBSERVER_SECRET_KEY}"
 
+# --- Airflow Fernet Key ---
 generate_sealed_secret "airflow-fernet-key" \
-    "${ROOT_DIR}/platform/airflow/templates/fernet-sealed-secret.yaml" \
+    "${ROOT_DIR}/platform/secrets/fernet-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=fernet-key="${AIRFLOW_FERNET_KEY}"
 
-# Airflow DB Connection String (to avoid inline password in values)
+# --- Airflow Admin Password ---
+# Username is 'admin' (hardcoded in values)
+generate_sealed_secret "airflow-admin-password" \
+    "${ROOT_DIR}/platform/secrets/admin-password-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=admin-password="${AIRFLOW_ADMIN_PASSWORD}"
+
+# --- Airflow DB Connection String ---
 # Note: Hostname assumes release name 'airflow' and namespace 'lakehouse-platform'
 AIRFLOW_DB_HOST="airflow-postgresql.lakehouse-platform"
 AIRFLOW_CONN_STRING="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${AIRFLOW_DB_HOST}:5432/airflow"
 
 generate_sealed_secret "airflow-db-connection" \
-    "${ROOT_DIR}/platform/airflow/templates/db-connection-sealed-secret.yaml" \
+    "${ROOT_DIR}/platform/secrets/db-connection-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=connection="${AIRFLOW_CONN_STRING}"
+
+# --- Grafana Admin Password ---
+# Username is 'admin' (hardcoded in values)
+generate_sealed_secret "grafana-admin-password" \
+    "${ROOT_DIR}/platform/secrets/grafana-admin-password-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=admin-password="${GRAFANA_ADMIN_PASSWORD}"
+
+# ==============================================================================
+# ArgoCD Secrets (argocd namespace)
+# ==============================================================================
+
+log_info "Generating ArgoCD secrets..."
+
+# --- ArgoCD Admin Password ---
+# Username is 'admin' (default)
+generate_sealed_secret "argocd-secret" \
+    "${ROOT_DIR}/platform/argocd/secrets/argocd-secret-sealed-secret.yaml" \
+    "argocd" \
+    --from-literal=admin.password="${ARGOCD_ADMIN_PASSWORD}"
 
 
 log_info "All secrets generated successfully!"
