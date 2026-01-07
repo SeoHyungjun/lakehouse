@@ -21,7 +21,7 @@ airflow:
   images:
     airflow:
       repository: apache/airflow
-      tag: "2.8.0-python3.11"
+      tag: "3.1.5-python3.13"
       pullPolicy: IfNotPresent
 
   # Use existing secret for admin password
@@ -160,7 +160,7 @@ airflow:
     kubernetes:
       namespace: lakehouse-platform
       worker_container_repository: apache/airflow
-      worker_container_tag: "2.8.0-python3.11"
+      worker_container_tag: "3.1.5-python3.13"
       delete_worker_pods: "True"
       delete_worker_pods_on_failure: "False"
       worker_pods_creation_batch_size: 1

@@ -178,7 +178,7 @@ provision_infrastructure() {
             # Platform components
             "docker.io/tabulario/iceberg-rest:latest"
             "docker.io/trinodb/trino:440"
-            "docker.io/apache/airflow:2.8.0-python3.11"
+            "docker.io/apache/airflow:3.1.5-python3.13"
 
             # Observability components (Prometheus, Grafana, etc.)
             "quay.io/prometheus/prometheus:v2.48.0"

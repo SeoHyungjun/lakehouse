@@ -107,7 +107,7 @@ echo "3. Contract Compliance - No Hardcoded Values"
 echo "---------------------------------------------"
 
 # Check for hardcoded IP addresses
-if grep -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' values.yaml values-*.yaml 2>/dev/null | grep -v "^#" | grep -v "2.8.0"; then
+if grep -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' values.yaml values-*.yaml 2>/dev/null | grep -v "^#" | grep -v "3.1.5"; then
     fail "Hardcoded IP addresses found (violates contract)"
 else
     pass "No hardcoded IP addresses"

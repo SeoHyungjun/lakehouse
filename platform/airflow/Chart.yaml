@@ -3,7 +3,7 @@ name: airflow
 description: Workflow orchestration platform for Lakehouse
 type: application
 version: 0.1.0
-appVersion: "2.8.0"
+appVersion: "3.1.5"
 
 # Dependencies - reference upstream Airflow Helm chart
 dependencies:
