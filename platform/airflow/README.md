@@ -117,9 +117,9 @@ kubectl logs -n lakehouse-platform -l component=webserver -f
 kubectl logs -n lakehouse-platform -l component=scheduler -f
 
 # Port-forward to access Web UI
-kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8080:8080
+kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8081:8080
 
-# Access Web UI at http://localhost:8080
+# Access Web UI at http://localhost:8081
 # Default credentials (dev): admin / admin
 ```
 
@@ -307,7 +307,7 @@ kubectl rollout restart deployment/airflow-scheduler -n lakehouse-platform
 
 #### Via Web UI
 
-1. Navigate to http://localhost:8080 (or your ingress URL)
+1. Navigate to http://localhost:8081 (or your ingress URL)
 2. Login with credentials
 3. Find DAG in list
 4. Click "Trigger DAG" button
@@ -387,10 +387,10 @@ airflow:
 Access the Airflow Web UI for workflow monitoring:
 
 ```bash
-kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8080:8080
+kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8081:8080
 ```
 
-Navigate to: `http://localhost:8080`
+Navigate to: `http://localhost:8081`
 
 **Features:**
 - DAG list and status
@@ -678,5 +678,5 @@ This chart is compliant with `contracts/workflow-orchestration.md` if:
 For issues or questions:
 1. Check the troubleshooting section above
 2. Review Airflow logs: `kubectl logs -n lakehouse-platform -l app.kubernetes.io/name=airflow`
-3. Check Web UI: `http://localhost:8080` (via port-forward)
+3. Check Web UI: `http://localhost:8081` (via port-forward)
 4. Consult Airflow documentation: https://airflow.apache.org/docs/
