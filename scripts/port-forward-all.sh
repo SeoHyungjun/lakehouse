@@ -16,26 +16,37 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Service definitions
+# Service definitions (namespace:service-name format)
 declare -A SERVICES=(
-    ["ArgoCD"]="argocd svc/argocd-server 30044:443"
-    ["Trino"]="lakehouse-platform svc/trino 31280:8080"
-    ["Airflow"]="lakehouse-platform svc/airflow-api-server 33443:8080"
-    ["Grafana"]="lakehouse-platform svc/observability-grafana 32300:80"
-    ["Prometheus"]="lakehouse-platform svc/observability-kube-prometheus-prometheus 32990:9090"
-    ["MinIO"]="lakehouse-platform svc/minio 31100:9000"
-    ["MinIO Console"]="lakehouse-platform svc/minio-console 31101:9001"
+    ["ArgoCD"]="argocd:argocd-server"
+    ["Trino"]="lakehouse-platform:trino"
+    ["Airflow"]="lakehouse-platform:airflow-api-server"
+    ["Grafana"]="lakehouse-platform:observability-grafana"
+    ["Prometheus"]="lakehouse-platform:observability-kube-prometh-prometheus"
+    ["MinIO"]="lakehouse-platform:minio"
+    ["MinIO Console"]="lakehouse-platform:minio-console"
 )
 
-# URLs for services
+# Port mappings (host:container)
+declare -A PORTS=(
+    ["ArgoCD"]="30044:80"
+    ["Trino"]="31280:8080"
+    ["Airflow"]="33443:8080"
+    ["Grafana"]="32300:80"
+    ["Prometheus"]="32990:9090"
+    ["MinIO"]="31100:9000"
+    ["MinIO Console"]="31101:9001"
+)
+
+# Access URLs
 declare -A URLS=(
-    ["ArgoCD"]="https://localhost:30044"
-    ["Trino"]="http://localhost:31280/ui/"
-    ["Airflow"]="http://localhost:33443"
-    ["Grafana"]="http://localhost:32300"
+    ["ArgoCD"]="http://localhost:30044 (admin: password from argocd-initial-admin-secret)"
+    ["Trino"]="http://localhost:31280"
+    ["Airflow"]="http://localhost:33443 (default admin:admin)"
+    ["Grafana"]="http://localhost:32300 (admin:admin)"
     ["Prometheus"]="http://localhost:32990"
-    ["MinIO S3"]="http://localhost:31100"
-    ["MinIO Console"]="http://localhost:31101"
+    ["MinIO"]="http://localhost:31100"
+    ["MinIO Console"]="http://localhost:31101 (admin:password123)"
 )
 
 # Function to print colored output
@@ -67,13 +78,15 @@ check_services() {
     local all_ready=true
 
     for service in "${!SERVICES[@]}"; do
-        local namespace=$(echo "${SERVICES[$service]}" | awk '{print $1}')
-        local name=$(echo "${SERVICES[$service]}" | awk '{print $2}')
+        # Parse namespace and service name from "namespace:service-name" format
+        local service_info="${SERVICES[$service]}"
+        local namespace=$(echo "$service_info" | cut -d':' -f1)
+        local name=$(echo "$service_info" | cut -d':' -f2)
 
         if kubectl get service "$name" -n "$namespace" &> /dev/null; then
             print_success "$service service found"
         else
-            print_warning "$service service not found (namespace: $namespace)"
+            print_warning "$service service not found (namespace: $namespace, name: $name)"
             all_ready=false
         fi
     done
@@ -110,7 +123,10 @@ main() {
     # Start port-forward for each service
     for service in "${!SERVICES[@]}"; do
         print_info "Starting $service..."
-        kubectl port-forward -n ${SERVICES[$service]} &
+        local service_info="${SERVICES[$service]}"
+        local namespace=$(echo "$service_info" | cut -d':' -f1)
+        local name=$(echo "$service_info" | cut -d':' -f2)
+        kubectl port-forward -n "$namespace" "svc/$name" "${PORTS[$service]}" &
         sleep 1
     done
 

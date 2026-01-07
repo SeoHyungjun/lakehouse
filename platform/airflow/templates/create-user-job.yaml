@@ -29,8 +29,7 @@ spec:
 
               python3 - <<'EOF'
               from airflow import settings
-              from airflow.models.auth import User
-              from airflow.providers.fab.auth_manager.models import Role
+              from airflow.providers.fab.auth_manager.models import User, Role
 
               session = settings.Session
               username = "${AIRFLOW_ADMIN_USER}"
@@ -50,20 +49,22 @@ spec:
                   role = session.query(Role).filter(Role.name == role_name).first()
                   if not role:
                       # Create Admin role with all permissions
-                      role = Role(name=role_name, permissions=set())
+                      role = Role(name=role_name, permissions=[])
                       session.add(role)
                       session.commit()
 
                   # Create user
                   user = User(
                       username=username,
-                      password=password,
                       email=email,
                       first_name=firstname,
                       last_name=lastname,
-                      role=role,
                       is_active=True
                   )
+                  # Set password (FAB handles hashing)
+                  user.password = password
+                  # Assign role
+                  user.roles = [role]
                   session.add(user)
                   session.commit()
                   print(f"User {username} created successfully.")

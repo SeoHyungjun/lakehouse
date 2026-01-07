@@ -83,21 +83,59 @@ generate_sealed_secret() {
 # ==============================================================================
 # Platform Secrets (lakehouse-platform namespace)
 # Stored in platform/secrets/
+#
+# Naming Convention: {service}-{purpose}-sealed-secret.yaml
 # ==============================================================================
 
 log_info "Generating platform secrets..."
 
-# --- MinIO ---
-# Used by: MinIO itself, Iceberg Catalog, Trino
-generate_sealed_secret "minio-creds" \
-    "${ROOT_DIR}/platform/secrets/minio-creds-sealed-secret.yaml" \
-    "${PLATFORM_NAMESPACE}" \
-    --from-literal=rootUser="${MINIO_ROOT_USER}" \
-    --from-literal=rootPassword="${MINIO_ROOT_PASSWORD}" \
-    --from-literal=accessKeyId="${MINIO_ROOT_USER}" \
-    --from-literal=secretAccessKey="${MINIO_ROOT_PASSWORD}"
+# --- Airflow Secrets ---
 
-# --- PostgreSQL ---
+# Airflow Webserver Secret Key
+generate_sealed_secret "airflow-webserver-secret" \
+    "${ROOT_DIR}/platform/secrets/airflow-webserver-secret-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=webserver-secret-key="${AIRFLOW_WEBSERVER_SECRET_KEY}"
+
+# Airflow Fernet Key for encryption
+generate_sealed_secret "airflow-fernet-key" \
+    "${ROOT_DIR}/platform/secrets/airflow-fernet-key-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=fernet-key="${AIRFLOW_FERNET_KEY}"
+
+# Airflow Admin User Credentials
+# Airflow 3.0.2 requires: admin-user, admin-password, admin-email, admin-firstname, admin-lastname
+generate_sealed_secret "airflow-admin-password" \
+    "${ROOT_DIR}/platform/secrets/airflow-admin-password-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=admin-user="${AIRFLOW_ADMIN_USER}" \
+    --from-literal=admin-password="${AIRFLOW_ADMIN_PASSWORD}" \
+    --from-literal=admin-email="${AIRFLOW_ADMIN_EMAIL:-admin@lakehouse.local}" \
+    --from-literal=admin-firstname="${AIRFLOW_ADMIN_FIRSTNAME:-Admin}" \
+    --from-literal=admin-lastname="${AIRFLOW_ADMIN_LASTNAME:-User}"
+
+# Airflow Database Connection String
+# Note: Hostname assumes release name 'airflow' and namespace 'lakehouse-platform'
+AIRFLOW_DB_HOST="airflow-postgresql.lakehouse-platform"
+AIRFLOW_CONN_STRING="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${AIRFLOW_DB_HOST}:5432/airflow"
+
+generate_sealed_secret "airflow-db-connection" \
+    "${ROOT_DIR}/platform/secrets/airflow-db-connection-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=connection="${AIRFLOW_CONN_STRING}"
+
+# --- Observability Secrets ---
+
+# Grafana Admin User Credentials
+generate_sealed_secret "grafana-admin-password" \
+    "${ROOT_DIR}/platform/secrets/grafana-admin-password-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=admin-password="${GRAFANA_ADMIN_PASSWORD}" \
+    --from-literal=admin-user="${GRAFANA_ADMIN_USER}"
+
+# --- Infrastructure Secrets ---
+
+# PostgreSQL Database Credentials
 # Used by: Airflow, Iceberg Catalog
 generate_sealed_secret "postgres-creds" \
     "${ROOT_DIR}/platform/secrets/postgres-creds-sealed-secret.yaml" \
@@ -106,43 +144,15 @@ generate_sealed_secret "postgres-creds" \
     --from-literal=password="${POSTGRES_PASSWORD}" \
     --from-literal=postgres-password="${POSTGRES_PASSWORD}"
 
-# --- Airflow Webserver Secret ---
-generate_sealed_secret "airflow-webserver-secret" \
-    "${ROOT_DIR}/platform/secrets/webserver-sealed-secret.yaml" \
+# MinIO Object Storage Credentials
+# Used by: MinIO itself, Iceberg Catalog, Trino
+generate_sealed_secret "minio-creds" \
+    "${ROOT_DIR}/platform/secrets/minio-creds-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
-    --from-literal=webserver-secret-key="${AIRFLOW_WEBSERVER_SECRET_KEY}"
-
-# --- Airflow Fernet Key ---
-generate_sealed_secret "airflow-fernet-key" \
-    "${ROOT_DIR}/platform/secrets/fernet-sealed-secret.yaml" \
-    "${PLATFORM_NAMESPACE}" \
-    --from-literal=fernet-key="${AIRFLOW_FERNET_KEY}"
-
-# --- Airflow Admin Password ---
-# Username from env
-generate_sealed_secret "airflow-admin-password" \
-    "${ROOT_DIR}/platform/secrets/admin-password-sealed-secret.yaml" \
-    "${PLATFORM_NAMESPACE}" \
-    --from-literal=admin-user="${AIRFLOW_ADMIN_USER}" \
-    --from-literal=admin-password="${AIRFLOW_ADMIN_PASSWORD}"
-
-# --- Airflow DB Connection String ---
-# Note: Hostname assumes release name 'airflow' and namespace 'lakehouse-platform'
-AIRFLOW_DB_HOST="airflow-postgresql.lakehouse-platform"
-AIRFLOW_CONN_STRING="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${AIRFLOW_DB_HOST}:5432/airflow"
-
-generate_sealed_secret "airflow-db-connection" \
-    "${ROOT_DIR}/platform/secrets/db-connection-sealed-secret.yaml" \
-    "${PLATFORM_NAMESPACE}" \
-    --from-literal=connection="${AIRFLOW_CONN_STRING}"
-
-# --- Grafana Admin Password ---
-# Username from env
-generate_sealed_secret "grafana-admin-password" \
-    "${ROOT_DIR}/platform/secrets/grafana-admin-password-sealed-secret.yaml" \
-    "${PLATFORM_NAMESPACE}" \
-    --from-literal=admin-password="${GRAFANA_ADMIN_PASSWORD}" \
-    --from-literal=admin-user="${GRAFANA_ADMIN_USER}"
+    --from-literal=rootUser="${MINIO_ROOT_USER}" \
+    --from-literal=rootPassword="${MINIO_ROOT_PASSWORD}" \
+    --from-literal=accessKeyId="${MINIO_ROOT_USER}" \
+    --from-literal=secretAccessKey="${MINIO_ROOT_PASSWORD}"
 
 
 log_info "All secrets generated successfully!"

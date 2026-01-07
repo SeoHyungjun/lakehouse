@@ -371,14 +371,14 @@ sync_argocd_applications() {
 
         # Login to ArgoCD
         log_info "Logging in to ArgoCD..."
-        ARGOCD_OPTS="--grpc-web" argocd login localhost:8080 \
+        ARGOCD_OPTS="--grpc-web" argocd login localhost:30044 \
             --username admin \
             --password "${ARGOCD_PASSWORD}" \
             --insecure || log_warn "ArgoCD CLI login failed"
-        
+
         # Sync all applications
         log_info "Syncing all applications..."
-        argocd app sync --all-namespaces || log_warn "Some applications failed to sync"
+        argocd app sync --all || log_warn "Some applications failed to sync"
         
         # Kill port-forward
         kill ${PORT_FORWARD_PID} 2>/dev/null || true

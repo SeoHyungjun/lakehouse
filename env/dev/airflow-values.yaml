@@ -14,16 +14,17 @@ airflow:
         memory: 1Gi
         cpu: 250m
 
-  # Scheduler - minimal resources for development
+  # Scheduler - increased resources for Airflow 3.0
+  # Note: Airflow 3.0 requires more memory, 2Gi to avoid OOMKilled
   scheduler:
     replicas: 1
     resources:
       requests:
-        memory: 256Mi
-        cpu: 100m
-      limits:
-        memory: 512Mi
+        memory: 1Gi
         cpu: 250m
+      limits:
+        memory: 2Gi
+        cpu: 500m
 
   # PostgreSQL - minimal resources for development
   postgresql:
