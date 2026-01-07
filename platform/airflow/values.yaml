@@ -194,10 +194,15 @@ airflow:
   extraEnvFrom: null
 
   # Database migration job configuration
+  # Reference: https://github.com/apache/airflow/tree/main/chart
+  # For ArgoCD/Flux/Rancher/Terraform, useHelmHooks and applyCustomEnv MUST be false
   migrateDatabaseJob:
     enabled: true
     useHelmHooks: false
-    applyCustomEnv: true
+    applyCustomEnv: false
+    # Automatically run migrations on ArgoCD sync
+    jobAnnotations:
+      "argocd.argoproj.io/hook": Sync
 
   # Ingress configuration
   ingress:
