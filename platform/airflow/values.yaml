@@ -21,34 +21,15 @@ airflow:
   images:
     airflow:
       repository: apache/airflow
-      tag: "3.1.5-python3.13"
+      tag: "3.1.5-python3.11"
       pullPolicy: IfNotPresent
 
   # Use existing secret for admin password
   # The secret should have key: admin-password
   adminUserSecretName: "airflow-admin-password"
 
-  # Webserver configuration (disabled in favor of standalone for Airflow 3.x)
+  # Webserver configuration
   webserver:
-    enabled: false
-    replicas: 0
-
-  # Default user credentials
-  # Note: Password is set from secret 'airflow-admin-password'
-  # After first login, change password through the UI
-  defaultUser:
-    enabled: false
-    role: Admin
-    username: admin
-    email: admin@example.com
-    firstName: Admin
-    lastName: User
-    password: ""  # Set from secret
-
-  # Standalone mode for Airflow 3.x (includes webserver)
-  # In Airflow 3.x, 'airflow webserver' command is removed, use 'standalone' instead
-  standalone:
-    enabled: true
     replicas: 1
 
     resources:
@@ -58,6 +39,21 @@ airflow:
       limits:
         memory: 1Gi
         cpu: 500m
+
+    service:
+      type: ClusterIP
+
+    # Default user credentials
+    # Note: Password is set from secret 'airflow-admin-password'
+    # After first login, change password through the UI
+    defaultUser:
+      enabled: false
+      role: Admin
+      username: admin
+      email: admin@example.com
+      firstName: Admin
+      lastName: User
+      password: ""  # Set from secret
 
     # Probes configuration
     livenessProbe:
@@ -100,7 +96,6 @@ airflow:
       existingSecret: postgres-creds
       database: airflow
     primary:
-      extraEnvVars:
       extraEnvVars:
         - name: POSTGRESQL_USERNAME
           valueFrom:
@@ -150,6 +145,9 @@ airflow:
       parallelism: 32
       max_active_tasks_per_dag: 16
       max_active_runs_per_dag: 16
+      # Airflow 3.1.5 does not have airflow.providers.fab yet
+      # Use basic auth manager instead
+      auth_manager: "airflow.api.auth.backend.basic_auth"
     
     webserver:
       expose_config: "True"
@@ -164,7 +162,7 @@ airflow:
     kubernetes:
       namespace: lakehouse-platform
       worker_container_repository: apache/airflow
-      worker_container_tag: "3.1.5-python3.13"
+      worker_container_tag: "3.1.5-python3.11"
       delete_worker_pods: "True"
       delete_worker_pods_on_failure: "False"
       worker_pods_creation_batch_size: 1
