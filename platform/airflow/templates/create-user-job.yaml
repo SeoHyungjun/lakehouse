@@ -26,19 +26,51 @@ spec:
             - |
               echo "Waiting for database..."
               airflow db check
-              
-              if airflow users list | grep -q "${AIRFLOW_ADMIN_USER}"; then
-                echo "User ${AIRFLOW_ADMIN_USER} already exists. Skipping creation."
-              else
-                echo "Creating user ${AIRFLOW_ADMIN_USER}..."
-                airflow users create \
-                  --username "${AIRFLOW_ADMIN_USER}" \
-                  --password "${AIRFLOW_ADMIN_PASSWORD}" \
-                  --firstname Admin \
-                  --lastname User \
-                  --role Admin \
-                  --email admin@example.com
-              fi
+
+              python3 - <<'EOF'
+              from airflow import settings
+              from airflow.models.auth import User
+              from airflow.providers.fab.auth_manager.models import Role
+
+              session = settings.Session
+              username = "${AIRFLOW_ADMIN_USER}"
+              password = "${AIRFLOW_ADMIN_PASSWORD}"
+              email = "${AIRFLOW_ADMIN_EMAIL}"
+              firstname = "${AIRFLOW_ADMIN_FIRSTNAME}"
+              lastname = "${AIRFLOW_ADMIN_LASTNAME}"
+              role_name = "${AIRFLOW_ADMIN_ROLE}"
+
+              # Check if user already exists
+              existing_user = session.query(User).filter(User.username == username).first()
+              if existing_user:
+                  print(f"User {username} already exists. Skipping creation.")
+              else:
+                  print(f"Creating user {username}...")
+                  # Get or create role
+                  role = session.query(Role).filter(Role.name == role_name).first()
+                  if not role:
+                      # Create Admin role with all permissions
+                      role = Role(name=role_name, permissions=set())
+                      session.add(role)
+                      session.commit()
+
+                  # Create user
+                  user = User(
+                      username=username,
+                      password=password,
+                      email=email,
+                      first_name=firstname,
+                      last_name=lastname,
+                      role=role,
+                      is_active=True
+                  )
+                  session.add(user)
+                  session.commit()
+                  print(f"User {username} created successfully.")
+
+              session.close()
+              EOF
+
           env:
             - name: AIRFLOW_ADMIN_USER
               valueFrom:
@@ -50,6 +82,14 @@ spec:
                 secretKeyRef:
                   name: airflow-admin-password
                   key: admin-password
+            - name: AIRFLOW_ADMIN_EMAIL
+              value: {{ .Values.airflow.webserver.defaultUser.email | quote }}
+            - name: AIRFLOW_ADMIN_FIRSTNAME
+              value: {{ .Values.airflow.webserver.defaultUser.firstName | quote }}
+            - name: AIRFLOW_ADMIN_LASTNAME
+              value: {{ .Values.airflow.webserver.defaultUser.lastName | quote }}
+            - name: AIRFLOW_ADMIN_ROLE
+              value: {{ .Values.airflow.webserver.defaultUser.role | quote }}
             - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
               valueFrom:
                 secretKeyRef:
@@ -60,6 +100,8 @@ spec:
                 secretKeyRef:
                   name: airflow-fernet-key
                   key: fernet-key
+            - name: AIRFLOW__API__AUTH_BACKENDS
+              value: "airflow.api.auth.backend.basic_auth"
       restartPolicy: OnFailure
 ---
 apiVersion: v1

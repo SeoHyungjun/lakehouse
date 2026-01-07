@@ -70,18 +70,18 @@ setup_port_forwards() {
     # Kill existing port-forwards
     pkill -f "port-forward.*lakehouse-platform" || true
     sleep 2
-    
+
     # Port-forward MinIO
-    kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 > /dev/null 2>&1 &
-    
+    kubectl port-forward -n lakehouse-platform svc/minio 31100:9000 > /dev/null 2>&1 &
+
     # Port-forward Trino
-    kubectl port-forward -n lakehouse-platform svc/trino 8080:8080 > /dev/null 2>&1 &
-    
+    kubectl port-forward -n lakehouse-platform svc/trino 31280:8080 > /dev/null 2>&1 &
+
     # Port-forward Iceberg Catalog
-    kubectl port-forward -n lakehouse-platform svc/iceberg-catalog 8181:8181 > /dev/null 2>&1 &
-    
+    kubectl port-forward -n lakehouse-platform svc/iceberg-catalog 31881:8181 > /dev/null 2>&1 &
+
     # Port-forward Sample Service
-    kubectl port-forward -n lakehouse-platform svc/sample-service 8082:80 > /dev/null 2>&1 &
+    kubectl port-forward -n lakehouse-platform svc/sample-service 31882:80 > /dev/null 2>&1 &
     
     # Wait for port-forwards to be ready
     sleep 5

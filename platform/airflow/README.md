@@ -117,9 +117,9 @@ kubectl logs -n lakehouse-platform -l component=webserver -f
 kubectl logs -n lakehouse-platform -l component=scheduler -f
 
 # Port-forward to access Web UI
-kubectl port-forward -n lakehouse-platform svc/airflow-api-server 8081:8080
+kubectl port-forward -n lakehouse-platform svc/airflow-api-server 33443:8080
 
-# Access Web UI at http://localhost:8081
+# Access Web UI at http://localhost:33443
 # Default credentials (dev): admin / admin
 ```
 
@@ -387,10 +387,10 @@ airflow:
 Access the Airflow Web UI for workflow monitoring:
 
 ```bash
-kubectl port-forward -n lakehouse-platform svc/airflow-api-server 8081:8080
+kubectl port-forward -n lakehouse-platform svc/airflow-api-server 33443:8080
 ```
 
-Navigate to: `http://localhost:8081`
+Navigate to: `http://localhost:33443`
 
 **Features:**
 - DAG list and status

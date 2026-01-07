@@ -148,8 +148,8 @@ helm install minio ./platform/minio \
 **Verification**:
 ```bash
 kubectl get pods -n lakehouse-platform -l app=minio
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000
-curl http://localhost:9000/minio/health/live
+kubectl port-forward -n lakehouse-platform svc/minio 31100:9000
+curl http://localhost:31100/minio/health/live
 ```
 
 #### Deploy Iceberg Catalog
@@ -194,8 +194,8 @@ helm install airflow ./platform/airflow \
 **Verification**:
 ```bash
 kubectl get pods -n lakehouse-platform -l app=airflow
-kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8080:8080
-# Access http://localhost:8080
+kubectl port-forward -n lakehouse-platform svc/airflow-api-server 33443:8080
+# Access http://localhost:33443
 ```
 
 #### Deploy Observability
@@ -210,8 +210,8 @@ helm install observability ./platform/observability \
 **Verification**:
 ```bash
 kubectl get pods -n lakehouse-platform -l app=prometheus
-kubectl port-forward -n lakehouse-platform svc/prometheus-operated 9090:9090
-# Access http://localhost:9090
+kubectl port-forward -n lakehouse-platform svc/prometheus-operated 32990:9090
+# Access http://localhost:32990
 ```
 
 ---
@@ -480,8 +480,8 @@ kubectl logs -n lakehouse-platform deployment/trino-coordinator
 kubectl logs -n lakehouse-platform deployment/trino-worker
 
 # Access Trino UI
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080
-# Navigate to http://localhost:8080
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080
+# Navigate to http://localhost:31280
 ```
 
 **Common Issues**:
@@ -508,8 +508,8 @@ kubectl get pods -n lakehouse-platform -l app=minio
 kubectl logs -n lakehouse-platform deployment/minio
 
 # Test MinIO health
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000
-curl http://localhost:9000/minio/health/live
+kubectl port-forward -n lakehouse-platform svc/minio 31100:9000
+curl http://localhost:31100/minio/health/live
 ```
 
 **Solutions**:
@@ -533,7 +533,7 @@ kubectl logs -n lakehouse-platform deployment/airflow-scheduler
 kubectl logs -n lakehouse-platform deployment/airflow-webserver
 
 # Access Airflow UI
-kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8080:8080
+kubectl port-forward -n lakehouse-platform svc/airflow-api-server 33443:8080
 ```
 
 **Solutions**:
@@ -595,14 +595,14 @@ kubectl logs -n argocd deployment/argocd-server
 
 **Prometheus**:
 ```bash
-kubectl port-forward -n lakehouse-platform svc/prometheus-operated 9090:9090
-# Access http://localhost:9090
+kubectl port-forward -n lakehouse-platform svc/prometheus-operated 32990:9090
+# Access http://localhost:32990
 ```
 
 **Grafana**:
 ```bash
-kubectl port-forward -n lakehouse-platform svc/grafana 3000:3000
-# Access http://localhost:3000
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80
+# Access http://localhost:32300
 # Default credentials: admin / <from secret>
 ```
 
@@ -760,8 +760,8 @@ kubectl delete pod <pod-name> -n lakehouse-platform --grace-period=0 --force
 kubectl get pod <pod-name> -n lakehouse-platform -o yaml
 
 # Port forward multiple services
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080 &
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 &
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080 &
+kubectl port-forward -n lakehouse-platform svc/minio 31100:9000 &
 kubectl port-forward -n lakehouse-platform svc/grafana 3000:3000 &
 ```
 

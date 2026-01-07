@@ -159,26 +159,26 @@ git push
 
 ```bash
 # 1. Trino (SQL Query Engine)
-# 접속: http://localhost:8080
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080 &
+# 접속: http://localhost:31280
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080 &
 
 # 2. Airflow (Workflow Orchestration)
-# 접속: http://localhost:8081 (admin / admin)
-kubectl port-forward -n lakehouse-platform svc/airflow-webserver 8081:8080 &
+# 접속: http://localhost:33443 (admin / admin)
+kubectl port-forward -n lakehouse-platform svc/airflow-api-server 33443:8080 &
 
 # 3. ArgoCD (GitOps Dashboard)
-# 접속: http://localhost:8082 (admin / 패스워드 확인 필요)
+# 접속: https://localhost:30044 (admin / 패스워드 확인 필요)
 # 패스워드 확인: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
-kubectl port-forward -n argocd svc/argocd-server 8082:443 &
+kubectl port-forward -n argocd svc/argocd-server 30044:443 &
 
 # 4. MinIO (Object Storage)
-# 접속: http://127.0.0.1:9001 (admin / changeme123)
+# 접속: http://127.0.0.1:31101 (admin / changeme123)
 # 주의: macOS에서는 localhost 대신 127.0.0.1을 명시해야 접속이 원활할 수 있습니다.
-kubectl port-forward -n lakehouse-platform svc/minio-console 9001:9001 --address 127.0.0.1 &
+kubectl port-forward -n lakehouse-platform svc/minio-console 31101:9001 --address 127.0.0.1 &
 
 # 5. Grafana (Dashboard)
-# 접속: http://localhost:3000 (admin / admin)
-kubectl port-forward -n lakehouse-platform svc/observability-grafana 3000:80 &
+# 접속: http://localhost:32300 (admin / admin)
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80 &
 ```
 
 ### 2.6 첫 번째 쿼리 실행
@@ -1066,8 +1066,8 @@ vim env/dev/helm-values.yaml
 kubectl logs -n lakehouse-platform deployment/trino-coordinator
 
 # Trino UI 접속
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080
-# http://localhost:8080 접속하여 쿼리 상태 확인
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080
+# http://localhost:31280 접속하여 쿼리 상태 확인
 ```
 
 **일반적인 오류와 해결**:
@@ -1126,8 +1126,8 @@ kubectl get svc -n lakehouse-platform minio
 
 **1. 포트 포워딩으로 접속**:
 ```bash
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000
-# http://localhost:9000 접속
+kubectl port-forward -n lakehouse-platform svc/minio 31100:9000
+# http://localhost:31100 접속
 ```
 
 **2. Ingress 설정** (외부 접속):
@@ -1208,8 +1208,8 @@ argocd app list
 
 **2. Grafana 대시보드**:
 ```bash
-kubectl port-forward -n lakehouse-platform svc/grafana 3000:3000
-# http://localhost:3000 접속
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80
+# http://localhost:32300 접속
 # 기본 대시보드:
 # - Lakehouse Overview
 # - MinIO Metrics
@@ -1527,8 +1527,8 @@ trino:
 **A**: Grafana 접속:
 
 ```bash
-kubectl port-forward -n lakehouse-platform svc/grafana 3000:3000
-# http://localhost:3000 접속
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80
+# http://localhost:32300 접속
 # ID: admin, PW: admin (개발 환경)
 ```
 
@@ -1576,7 +1576,7 @@ kubectl top nodes
 kubectl top pods -n lakehouse-platform
 
 # 포트 포워딩
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080
 ```
 
 ### Helm
@@ -1695,7 +1695,7 @@ helm upgrade --install observability platform/observability \
 MinIO와 같이 웹 소켓이나 리다이렉션이 많은 통신의 경우 `localhost` 대신 `127.0.0.1`을 명시적으로 사용하세요.
 
 ```bash
-kubectl port-forward svc/minio -n lakehouse-platform 9000:9000 --address 127.0.0.1
+kubectl port-forward svc/minio -n lakehouse-platform 31100:9000 --address 127.0.0.1
 ```
 
 ### 학습 자료

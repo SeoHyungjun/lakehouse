@@ -357,13 +357,13 @@ sync_argocd_applications() {
         log_info "Using ArgoCD CLI to sync applications..."
         
         # Port-forward to ArgoCD server
-        kubectl port-forward svc/argocd-server -n "${ARGOCD_NAMESPACE}" 8080:443 > /dev/null 2>&1 &
+        kubectl port-forward svc/argocd-server -n "${ARGOCD_NAMESPACE}" 30044:443 > /dev/null 2>&1 &
         PORT_FORWARD_PID=$!
 
         # Wait for port-forward to be ready
         log_info "Waiting for port-forward to be ready..."
         for i in {1..30}; do
-            if curl -k -s https://localhost:8080/healthz > /dev/null 2>&1; then
+            if curl -k -s https://localhost:30044/healthz > /dev/null 2>&1; then
                 break
             fi
             sleep 1
@@ -423,14 +423,14 @@ print_next_steps() {
     echo "Next steps:"
     echo ""
     echo "1. Access ArgoCD UI:"
-    echo "   kubectl port-forward svc/argocd-server -n argocd 8080:443"
-    echo "   Navigate to: https://localhost:8080"
+    echo "   kubectl port-forward svc/argocd-server -n argocd 30044:443"
+    echo "   Navigate to: https://localhost:30044"
     echo "   Username: admin"
     echo "   Password: ${ARGOCD_PASSWORD:-<see above>}"
     echo ""
     echo "2. Access Grafana (once observability is synced):"
-    echo "   kubectl port-forward svc/observability-grafana -n lakehouse-platform 3000:80"
-    echo "   Navigate to: http://localhost:3000"
+    echo "   kubectl port-forward svc/observability-grafana -n lakehouse-platform 32300:80"
+    echo "   Navigate to: http://localhost:32300"
     echo ""
     echo "3. Check application status:"
     echo "   kubectl get applications -n argocd"

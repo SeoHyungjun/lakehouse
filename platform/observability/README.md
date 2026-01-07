@@ -105,9 +105,9 @@ kubectl get prometheus -n lakehouse-platform
 kubectl get deployment -n lakehouse-platform -l app.kubernetes.io/name=grafana
 
 # Port-forward to access Grafana UI
-kubectl port-forward -n lakehouse-platform svc/observability-grafana 3000:80
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80
 
-# Access Grafana at http://localhost:3000
+# Access Grafana at http://localhost:32300
 # Default credentials (dev): admin / admin
 ```
 
@@ -187,10 +187,10 @@ kube-prometheus-stack:
 #### Via Port-Forward (Development)
 
 ```bash
-kubectl port-forward -n lakehouse-platform svc/observability-grafana 3000:80
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80
 ```
 
-Navigate to: `http://localhost:3000`
+Navigate to: `http://localhost:32300`
 
 **Default Credentials:**
 - Username: `admin`
@@ -221,10 +221,10 @@ The observability stack includes pre-configured dashboards for:
 
 Access Prometheus UI:
 ```bash
-kubectl port-forward -n lakehouse-platform svc/observability-kube-prometheus-prometheus 9090:9090
+kubectl port-forward -n lakehouse-platform svc/observability-kube-prometheus-prometheus 32990:9090
 ```
 
-Navigate to: `http://localhost:9090`
+Navigate to: `http://localhost:32990`
 
 **Example Queries:**
 
@@ -337,8 +337,8 @@ curl http://localhost:9090/metrics
 Grafana exposes metrics at `/metrics`:
 
 ```bash
-kubectl port-forward -n lakehouse-platform svc/observability-grafana 3000:80
-curl http://localhost:3000/metrics
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80
+curl http://localhost:32300/metrics
 ```
 
 ### Health Checks
@@ -482,8 +482,8 @@ kubectl exec -n lakehouse-platform prometheus-observability-kube-prometheus-prom
 **Solution:**
 ```bash
 # Check Alertmanager status
-kubectl port-forward -n lakehouse-platform svc/observability-kube-prometheus-alertmanager 9093:9093
-# Navigate to http://localhost:9093
+kubectl port-forward -n lakehouse-platform svc/observability-kube-prometheus-alertmanager 32993:9093
+# Navigate to http://localhost:32993
 
 # Check Alertmanager logs
 kubectl logs -n lakehouse-platform alertmanager-observability-kube-prometheus-alertmanager-0

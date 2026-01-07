@@ -205,7 +205,7 @@ airflow:
   # Reference: https://github.com/apache/airflow/tree/main/chart
   # For ArgoCD/Flux/Rancher/Terraform, useHelmHooks and applyCustomEnv MUST be false
   createUserJob:
-    enabled: false
+    enabled: true
     useHelmHooks: false
     applyCustomEnv: false
 

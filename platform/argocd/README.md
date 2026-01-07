@@ -110,10 +110,10 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 **Via Port-Forward (Development):**
 ```bash
-kubectl port-forward svc/argocd-server -n argocd 8082:443
+kubectl port-forward svc/argocd-server -n argocd 30044:443
 ```
 
-Navigate to: `https://localhost:8082`
+Navigate to: `https://localhost:30044`
 
 **Via Ingress (Staging/Production):**
 - Staging: `https://argocd-staging.example.com`

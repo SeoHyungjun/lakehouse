@@ -84,12 +84,12 @@ cd lakehouse
 ./scripts/bootstrap.sh dev
 
 # 3. 서비스 접속
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080 &
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 &
-kubectl port-forward -n lakehouse-platform svc/grafana 3000:3000 &
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080 &
+kubectl port-forward -n lakehouse-platform svc/minio 31100:9000 &
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80 &
 
 # 4. 첫 번째 쿼리 실행
-trino --server localhost:8080 --catalog iceberg --schema default
+trino --server localhost:31280 --catalog iceberg --schema default
 ```
 
 **축하합니다! 🎉** Lakehouse 플랫폼이 실행 중입니다.
@@ -355,8 +355,8 @@ trino:
 
 ```bash
 # Grafana 접속
-kubectl port-forward -n lakehouse-platform svc/grafana 3000:3000
-# http://localhost:3000 접속
+kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80
+# http://localhost:32300 접속
 # ID: admin, PW: admin (개발 환경)
 ```
 
@@ -397,8 +397,8 @@ kubectl logs <pod-name> -n lakehouse-platform
 kubectl logs -n lakehouse-platform deployment/trino-coordinator
 
 # Trino UI 접속
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080
-# http://localhost:8080 접속
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080
+# http://localhost:31280 접속
 ```
 
 ### MinIO 접속 불가
@@ -408,7 +408,7 @@ kubectl port-forward -n lakehouse-platform svc/trino 8080:8080
 kubectl get pods -n lakehouse-platform -l app=minio
 
 # 포트 포워딩
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000
+kubectl port-forward -n lakehouse-platform svc/minio 31100:9000
 ```
 
 더 많은 문제 해결 방법은 **[운영 가이드](docs/runbook.md#troubleshooting)**를 참조하세요.

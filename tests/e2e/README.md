@@ -62,10 +62,10 @@ pip install -r requirements.txt
 kubectl get pods -n lakehouse-platform
 
 # Port-forward services for local testing
-kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 &
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080 &
-kubectl port-forward -n lakehouse-platform svc/iceberg-catalog 8181:8181 &
-kubectl port-forward -n lakehouse-platform svc/sample-service 8082:80 &
+kubectl port-forward -n lakehouse-platform svc/minio 31100:9000 &
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080 &
+kubectl port-forward -n lakehouse-platform svc/iceberg-catalog 31881:8181 &
+kubectl port-forward -n lakehouse-platform svc/sample-service 31882:80 &
 ```
 
 ### Running Tests in Container

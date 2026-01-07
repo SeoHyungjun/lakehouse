@@ -180,10 +180,11 @@ endpoint: http://minio.lakehouse.svc.cluster.local:9000
 
 **From outside cluster (port-forward):**
 ```bash
-kubectl port-forward -n lakehouse svc/minio 9000:9000 9001:9001
+kubectl port-forward -n lakehouse-platform svc/minio 31100:9000 &
+kubectl port-forward -n lakehouse-platform svc/minio-console 31101:9001 &
 
-# S3 API: http://localhost:9000
-# Web Console: http://localhost:9001
+# S3 API: http://localhost:31100
+# Web Console: http://localhost:31101
 ```
 
 ### S3 Client Configuration

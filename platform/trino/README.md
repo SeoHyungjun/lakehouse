@@ -120,9 +120,9 @@ kubectl logs -n lakehouse-platform -l app=trino,component=coordinator
 kubectl logs -n lakehouse-platform -l app=trino,component=worker
 
 # Port-forward to access Web UI
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080
 
-# Access Web UI at http://localhost:8080/ui/
+# Access Web UI at http://localhost:31280/ui/
 ```
 
 ## Configuration
@@ -377,10 +377,10 @@ kubectl logs -n lakehouse-platform -l app=trino,component=worker -f
 Access the Trino Web UI for live query monitoring:
 
 ```bash
-kubectl port-forward -n lakehouse-platform svc/trino 8080:8080
+kubectl port-forward -n lakehouse-platform svc/trino 31280:8080
 ```
 
-Navigate to: `http://localhost:8080/ui/`
+Navigate to: `http://localhost:31280/ui/`
 
 **Features:**
 - Live query monitoring

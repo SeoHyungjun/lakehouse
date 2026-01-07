@@ -18,23 +18,24 @@ NC='\033[0m' # No Color
 
 # Service definitions
 declare -A SERVICES=(
-    ["ArgoCD"]="argocd svc/argocd-server 8082:443"
-    ["Trino"]="lakehouse-platform svc/trino 8080:8080"
-    ["Airflow"]="lakehouse-platform svc/airflow-api-server 8081:8080"
-    ["Grafana"]="lakehouse-platform svc/observability-grafana 3000:80"
-    ["Prometheus"]="lakehouse-platform svc/observability-kube-prometheus-prometheus 9090:9090"
-    ["MinIO"]="lakehouse svc/minio 9000:9000 9001:9001"
+    ["ArgoCD"]="argocd svc/argocd-server 30044:443"
+    ["Trino"]="lakehouse-platform svc/trino 31280:8080"
+    ["Airflow"]="lakehouse-platform svc/airflow-api-server 33443:8080"
+    ["Grafana"]="lakehouse-platform svc/observability-grafana 32300:80"
+    ["Prometheus"]="lakehouse-platform svc/observability-kube-prometheus-prometheus 32990:9090"
+    ["MinIO"]="lakehouse-platform svc/minio 31100:9000"
+    ["MinIO Console"]="lakehouse-platform svc/minio-console 31101:9001"
 )
 
 # URLs for services
 declare -A URLS=(
-    ["ArgoCD"]="https://localhost:8082"
-    ["Trino"]="http://localhost:8080/ui/"
-    ["Airflow"]="http://localhost:8081"
-    ["Grafana"]="http://localhost:3000"
-    ["Prometheus"]="http://localhost:9090"
-    ["MinIO S3"]="http://localhost:9000"
-    ["MinIO Console"]="http://localhost:9001"
+    ["ArgoCD"]="https://localhost:30044"
+    ["Trino"]="http://localhost:31280/ui/"
+    ["Airflow"]="http://localhost:33443"
+    ["Grafana"]="http://localhost:32300"
+    ["Prometheus"]="http://localhost:32990"
+    ["MinIO S3"]="http://localhost:31100"
+    ["MinIO Console"]="http://localhost:31101"
 )
 
 # Function to print colored output

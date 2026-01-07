@@ -154,24 +154,24 @@ chmod +x scripts/*.sh
 
 **ArgoCD:**
 ```bash
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-# Navigate to: https://localhost:8080
+kubectl port-forward svc/argocd-server -n argocd 30044:443
+# Navigate to: https://localhost:30044
 # Username: admin
 # Password: (from bootstrap output)
 ```
 
 **Grafana:**
 ```bash
-kubectl port-forward svc/observability-grafana -n lakehouse-platform 3000:80
-# Navigate to: http://localhost:3000
+kubectl port-forward svc/observability-grafana -n lakehouse-platform 32300:80
+# Navigate to: http://localhost:32300
 # Username: admin
 # Password: admin (dev) or as configured
 ```
 
 **Trino:**
 ```bash
-kubectl port-forward svc/trino -n lakehouse-platform 8080:8080
-# Navigate to: http://localhost:8080
+kubectl port-forward svc/trino -n lakehouse-platform 31280:8080
+# Navigate to: http://localhost:31280
 ```
 
 ### Cleanup Environment
