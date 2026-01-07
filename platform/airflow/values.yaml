@@ -201,6 +201,14 @@ airflow:
     jobAnnotations:
       "argocd.argoproj.io/hook": Sync
 
+  # Create user job configuration
+  # Reference: https://github.com/apache/airflow/tree/main/chart
+  # For ArgoCD/Flux/Rancher/Terraform, useHelmHooks and applyCustomEnv MUST be false
+  createUserJob:
+    enabled: false
+    useHelmHooks: false
+    applyCustomEnv: false
+
   # Ingress configuration
   ingress:
     enabled: false
