@@ -121,12 +121,16 @@ airflow:
     
     # GitSync configuration for DAG deployment
     gitSync:
-      enabled: false
-      repo: ""
+      enabled: true
+      repo: https://github.com/SeoHyungjun/lakehouse-dags.git
       branch: main
-      subPath: "workflows/"
+      subPath: dags
       wait: 60
       maxFailures: 0
+      credentials:
+        secretName: git-sync-cred
+        usernameKey: username
+        passwordKey: token
 
   # Airflow configuration
   # Reference: contracts/workflow-orchestration.md section 12

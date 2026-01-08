@@ -164,6 +164,14 @@ generate_sealed_secret "airflow-connections" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=AIRFLOW_CONN_POSTGRES_DEFAULT="${AIRFLOW_CONN_POSTGRES_DEFAULT}"
 
+# Airflow GitSync Credentials
+# Used by GitSync to pull DAGs from lakehouse-dags repository
+generate_sealed_secret "git-sync-cred" \
+    "${ROOT_DIR}/platform/secrets/git-sync-cred-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=username="${GITHUB_USERNAME}" \
+    --from-literal=token="${GITHUB_TOKEN}"
+
 
 log_info "All secrets generated successfully!"
 echo "Don't forget to commit the new SealedSecret YAML files."
