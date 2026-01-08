@@ -145,14 +145,24 @@ generate_sealed_secret "postgres-creds" \
     --from-literal=postgres-password="${POSTGRES_PASSWORD}"
 
 # MinIO Object Storage Credentials
-# Used by: MinIO itself, Iceberg Catalog, Trino
+# Used by: MinIO itself, Iceberg Catalog, Trino, Airflow DAGs
 generate_sealed_secret "minio-creds" \
     "${ROOT_DIR}/platform/secrets/minio-creds-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=rootUser="${MINIO_ROOT_USER}" \
     --from-literal=rootPassword="${MINIO_ROOT_PASSWORD}" \
     --from-literal=accessKeyId="${MINIO_ROOT_USER}" \
-    --from-literal=secretAccessKey="${MINIO_ROOT_PASSWORD}"
+    --from-literal=secretAccessKey="${MINIO_ROOT_PASSWORD}" \
+    --from-literal=MINIO_ENDPOINT_URL="${MINIO_ENDPOINT_URL:-http://minio.lakehouse-platform:9000}"
+
+# --- Airflow DAG Connections ---
+
+# Airflow Connections for DAGs (PostgreSQL)
+# MinIO connection uses boto3 with environment variables from minio-creds
+generate_sealed_secret "airflow-connections" \
+    "${ROOT_DIR}/platform/secrets/airflow-connections-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=AIRFLOW_CONN_POSTGRES_DEFAULT="${AIRFLOW_CONN_POSTGRES_DEFAULT}"
 
 
 log_info "All secrets generated successfully!"

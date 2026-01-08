@@ -34,6 +34,9 @@ airflow:
   webserver:
     replicas: 1
 
+    defaultUser:
+      enabled: false
+
     resources:
       requests:
         memory: 512Mi
@@ -178,7 +181,12 @@ airflow:
   extraEnv: null
 
   # Extra environment variables from secrets
-  extraEnvFrom: null
+  # Note: extraEnvFrom expects a templated string, not an array
+  extraEnvFrom: |
+    - secretRef:
+        name: airflow-connections
+    - secretRef:
+        name: minio-creds
 
   # Database migration job configuration
   # Reference: https://github.com/apache/airflow/tree/main/chart
@@ -190,11 +198,6 @@ airflow:
     # Automatically run migrations on ArgoCD sync
     jobAnnotations:
       "argocd.argoproj.io/hook": Sync
-
-  # Create user job configuration
-  # DISABLED for Airflow 3.0.2 - createUserJob not supported in this version
-  # Admin user is created from secret 'airflow-admin-password' with required fields:
-  # admin-user, admin-password, admin-email, admin-firstname, admin-lastname
 
   # Ingress configuration
   ingress:

@@ -43,6 +43,8 @@ catalog:
     secretAccessKey: ""
     # Path-style access required for MinIO compatibility
     pathStyleAccess: true
+    # Region required for AWS SDK compatibility (even with MinIO)
+    region: us-east-1
   
   # Catalog backend type: jdbc | rest | hive | glue
   # Backend must be swappable via configuration only (no code changes)

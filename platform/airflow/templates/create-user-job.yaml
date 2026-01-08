@@ -4,8 +4,10 @@ metadata:
   name: {{ .Release.Name }}-create-user
   namespace: {{ .Values.global.namespace | default .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    # ArgoCD PostSync hook - runs after sync completes
+    argocd.argoproj.io/hook: PostSync
+    # Delete hook after it succeeds - comment out next line to keep job for debugging
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
     # Wait for webserver/scheduler to be ready-ish, but mainly we need DB.
     # We can rely on airflow core's wait-for-db logic usually.
 spec:
@@ -24,20 +26,44 @@ spec:
           command: ["/bin/bash", "-c"]
           args:
             - |
-              echo "Waiting for database..."
-              airflow db check
+              set -e
 
-              python3 - <<'EOF'
+              # Wait for database connection with retries
+              echo "Waiting for database connection..."
+              for i in {1..60}; do
+                if airflow db check > /dev/null 2>&1; then
+                  echo "Database connection established."
+                  break
+                fi
+                echo "Waiting for database... ($i/60)"
+                sleep 5
+              done
+
+              # Wait for ab_user table to exist (Airflow schema must be initialized)
+              echo "Waiting for Airflow schema to be initialized..."
+              for i in {1..60}; do
+                if psql "${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}" -c "SELECT 1 FROM ab_user LIMIT 1" > /dev/null 2>&1; then
+                  echo "Airflow schema initialized."
+                  break
+                fi
+                echo "Waiting for Airflow schema... ($i/60)"
+                sleep 5
+              done
+
+              echo "Creating user ${AIRFLOW_ADMIN_USER}..."
+              python3 << 'PYTHON_SCRIPT'
+              import os
               from airflow import settings
               from airflow.providers.fab.auth_manager.models import User, Role
+              from werkzeug.security import generate_password_hash
 
               session = settings.Session
-              username = "${AIRFLOW_ADMIN_USER}"
-              password = "${AIRFLOW_ADMIN_PASSWORD}"
-              email = "${AIRFLOW_ADMIN_EMAIL}"
-              firstname = "${AIRFLOW_ADMIN_FIRSTNAME}"
-              lastname = "${AIRFLOW_ADMIN_LASTNAME}"
-              role_name = "${AIRFLOW_ADMIN_ROLE}"
+              username = os.environ['AIRFLOW_ADMIN_USER']
+              password = os.environ['AIRFLOW_ADMIN_PASSWORD']
+              email = os.environ['AIRFLOW_ADMIN_EMAIL']
+              firstname = os.environ['AIRFLOW_ADMIN_FIRSTNAME']
+              lastname = os.environ['AIRFLOW_ADMIN_LASTNAME']
+              role_name = os.environ['AIRFLOW_ADMIN_ROLE']
 
               # Check if user already exists
               existing_user = session.query(User).filter(User.username == username).first()
@@ -45,32 +71,29 @@ spec:
                   print(f"User {username} already exists. Skipping creation.")
               else:
                   print(f"Creating user {username}...")
-                  # Get or create role
+                  # Find role
                   role = session.query(Role).filter(Role.name == role_name).first()
                   if not role:
-                      # Create Admin role with all permissions
-                      role = Role(name=role_name, permissions=[])
-                      session.add(role)
-                      session.commit()
+                      print(f"Role {role_name} not found. Available roles:")
+                      for r in session.query(Role).all():
+                          print(f"  - {r.name}")
+                      raise Exception(f"Role {role_name} not found")
 
-                  # Create user
+                  # Create user with hashed password
                   user = User(
                       username=username,
                       email=email,
                       first_name=firstname,
-                      last_name=lastname,
-                      is_active=True
+                      last_name=lastname
                   )
-                  # Set password (FAB handles hashing)
-                  user.password = password
-                  # Assign role
+                  user.password = generate_password_hash(password)
                   user.roles = [role]
                   session.add(user)
                   session.commit()
                   print(f"User {username} created successfully.")
 
               session.close()
-              EOF
+              PYTHON_SCRIPT
 
           env:
             - name: AIRFLOW_ADMIN_USER
@@ -90,7 +113,7 @@ spec:
             - name: AIRFLOW_ADMIN_LASTNAME
               value: {{ .Values.airflow.webserver.defaultUser.lastName | quote }}
             - name: AIRFLOW_ADMIN_ROLE
-              value: {{ .Values.airflow.webserver.defaultUser.role | quote }}
+              value: "Admin"
             - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
               valueFrom:
                 secretKeyRef:
@@ -111,5 +134,7 @@ metadata:
   name: {{ .Release.Name }}-create-user-job
   namespace: {{ .Values.global.namespace | default .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    # ArgoCD PostSync hook - runs after sync completes
+    argocd.argoproj.io/hook: PostSync
+    # Delete hook after it succeeds
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
