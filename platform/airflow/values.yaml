@@ -115,22 +115,19 @@ airflow:
   # DAGs configuration
   dags:
     persistence:
-      enabled: true
-      size: 1Gi
-      storageClassName: ""
-    
+      enabled: false
+      # size: 1Gi
+      # storageClassName: ""
+
     # GitSync configuration for DAG deployment
-    gitSync:
-      enabled: true
-      repo: https://github.com/SeoHyungjun/lakehouse-dags.git
-      branch: main
-      subPath: dags
-      wait: 60
-      maxFailures: 0
-      credentials:
-        secretName: git-sync-cred
-        usernameKey: username
-        passwordKey: token
+    # gitSync:
+    #   enabled: true
+    #   repo: https://github.com/SeoHyungjun/lakehouse-dags.git
+    #   branch: main
+    #   subPath: "dags"
+    #   wait: 60
+    #   maxFailures: 0
+    #   credentialsSecret: git-sync-cred
 
   # Airflow configuration
   # Reference: contracts/workflow-orchestration.md section 12
@@ -191,6 +188,8 @@ airflow:
         name: airflow-connections
     - secretRef:
         name: minio-creds
+    - secretRef:
+        name: git-sync-cred
 
   # Database migration job configuration
   # Reference: https://github.com/apache/airflow/tree/main/chart

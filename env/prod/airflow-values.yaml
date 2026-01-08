@@ -79,15 +79,14 @@ airflow:
   # DAGs - production persistence with GitSync
   dags:
     persistence:
-      enabled: true
-      size: 10Gi
+      enabled: false
+      # size: 10Gi
 
     # GitSync enabled for production
     gitSync:
       enabled: true
       repo: "https://github.com/your-org/lakehouse-workflows.git"
       branch: main
-      subPath: "workflows/"
       wait: 30
       maxFailures: 0
       sshKeySecret: airflow-git-ssh-secret

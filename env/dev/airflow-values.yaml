@@ -40,11 +40,21 @@ airflow:
           memory: 512Mi
           cpu: 250m
 
-  # DAGs - minimal persistence
+  # DAGs - minimal persistence with GitSync
   dags:
     persistence:
+      enabled: false
+      # size: 1Gi
+
+    # GitSync configuration for DAG deployment
+    gitSync:
       enabled: true
-      size: 1Gi
+      repo: https://github.com/SeoHyungjun/lakehouse-dags.git
+      branch: main
+      depth: 1
+      wait: 60
+      maxFailures: 0
+      credentialsSecret: git-sync-cred
 
   # Airflow configuration - development settings
   config:

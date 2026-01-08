@@ -42,14 +42,13 @@ airflow:
   # DAGs - moderate persistence with GitSync
   dags:
     persistence:
-      enabled: true
-      size: 5Gi
+      enabled: false
+      # size: 5Gi
 
     gitSync:
       enabled: true
       repo: "https://github.com/your-org/lakehouse-workflows.git"
       branch: staging
-      subPath: "workflows/"
       wait: 60
       maxFailures: 3
 

@@ -166,11 +166,12 @@ generate_sealed_secret "airflow-connections" \
 
 # Airflow GitSync Credentials
 # Used by GitSync to pull DAGs from lakehouse-dags repository
+# GitSync v4 requires GITSYNC_USERNAME and GITSYNC_PASSWORD keys
 generate_sealed_secret "git-sync-cred" \
     "${ROOT_DIR}/platform/secrets/git-sync-cred-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
-    --from-literal=username="${GITHUB_USERNAME}" \
-    --from-literal=token="${GITHUB_TOKEN}"
+    --from-literal=GITSYNC_USERNAME="${GITHUB_USERNAME}" \
+    --from-literal=GITSYNC_PASSWORD="${GITHUB_TOKEN}"
 
 
 log_info "All secrets generated successfully!"
