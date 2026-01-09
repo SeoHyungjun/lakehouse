@@ -139,6 +139,8 @@ airflow:
       parallelism: 32
       max_active_tasks_per_dag: 16
       max_active_runs_per_dag: 16
+      dag_dir_list_interval: 30
+      min_file_process_interval: 5
     
     webserver:
       expose_config: "True"

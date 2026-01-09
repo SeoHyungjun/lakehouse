@@ -38,15 +38,15 @@ declare -A PORTS=(
     ["MinIO Console"]="31101:9001"
 )
 
-# Access URLs
+# Access URLs (replace YOUR_IP with actual machine IP for remote access)
 declare -A URLS=(
-    ["ArgoCD"]="http://localhost:30044 (admin: password from argocd-initial-admin-secret)"
-    ["Trino"]="http://localhost:31280"
-    ["Airflow"]="http://localhost:33443 (default admin:admin)"
-    ["Grafana"]="http://localhost:32300 (admin:admin)"
-    ["Prometheus"]="http://localhost:32990"
-    ["MinIO"]="http://localhost:31100"
-    ["MinIO Console"]="http://localhost:31101 (admin:password123)"
+    ["ArgoCD"]="http://YOUR_IP:30044 (admin: password from argocd-initial-admin-secret)"
+    ["Trino"]="http://YOUR_IP:31280"
+    ["Airflow"]="http://YOUR_IP:33443"
+    ["Grafana"]="http://YOUR_IP:32300"
+    ["Prometheus"]="http://YOUR_IP:32990"
+    ["MinIO"]="http://YOUR_IP:31100"
+    ["MinIO Console"]="http://YOUR_IP:31101"
 )
 
 # Function to print colored output
@@ -126,7 +126,9 @@ main() {
         local service_info="${SERVICES[$service]}"
         local namespace=$(echo "$service_info" | cut -d':' -f1)
         local name=$(echo "$service_info" | cut -d':' -f2)
-        kubectl port-forward -n "$namespace" "svc/$name" "${PORTS[$service]}" &
+
+        # All services use 0.0.0.0 for external access
+        kubectl port-forward -n "$namespace" "svc/$name" "${PORTS[$service]}" --address 0.0.0.0 &
         sleep 1
     done
 
@@ -134,14 +136,25 @@ main() {
     print_success "All port-forwards started!"
     echo ""
 
+    # Get machine IP address
+    MACHINE_IP=$(hostname -I | awk '{print $1}')
+    if [ -z "$MACHINE_IP" ]; then
+        MACHINE_IP="YOUR_IP"
+    fi
+
     # Print URLs
     echo -e "${GREEN}========================================${NC}"
     echo -e "${GREEN}  Access URLs${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo ""
+    echo -e "${YELLOW}Machine IP: ${MACHINE_IP}${NC}"
+    echo ""
 
     for service in "${!URLS[@]}"; do
-        echo -e "${BLUE}•${NC} $service: ${URLS[$service]}"
+        local url="${URLS[$service]}"
+        # All services use external IP for browser access
+        url="${url//YOUR_IP/$MACHINE_IP}"
+        echo -e "${BLUE}•${NC} $service: $url"
     done
 
     echo ""

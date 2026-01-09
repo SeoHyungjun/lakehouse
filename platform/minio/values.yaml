@@ -42,6 +42,10 @@ minio:
   rootPassword: ""
   existingSecret: "minio-creds"
 
+# Console configuration
+console:
+  enabled: true
+
 # Buckets to create on startup
 buckets:
   - name: lakehouse
