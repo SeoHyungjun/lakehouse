@@ -133,7 +133,7 @@ airflow:
   # Reference: contracts/workflow-orchestration.md section 12
   config:
     core:
-      dags_folder: "/opt/airflow/dags"
+      # dags_folder: "/opt/airflow/dags"
       load_examples: "False"
       executor: "KubernetesExecutor"
       parallelism: 32

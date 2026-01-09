@@ -42,6 +42,7 @@ airflow:
 
   # DAGs - minimal persistence with GitSync
   dags:
+    mountPath: "/opt/airflow/dags"
     persistence:
       enabled: false
       # size: 1Gi
@@ -59,6 +60,7 @@ airflow:
   # Airflow configuration - development settings
   config:
     core:
+      dags_folder: "/opt/airflow/dags/repo/dags"
       parallelism: 8
       max_active_tasks_per_dag: 4
       max_active_runs_per_dag: 4
