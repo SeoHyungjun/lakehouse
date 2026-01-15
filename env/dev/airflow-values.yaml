@@ -2,6 +2,30 @@
 # Used by ArgoCD Application: platform/argocd/templates/airflow-application.yaml
 
 airflow:
+  # Environment variables for all airflow containers
+  env:
+    - name: AIRFLOW_CONN_AWS_DEFAULT
+      valueFrom:
+        secretKeyRef:
+          name: airflow-connections
+          key: AIRFLOW_CONN_AWS_DEFAULT
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: minio-creds
+          key: accessKeyId
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: minio-creds
+          key: secretAccessKey
+
+  # Secrets for all airflow containers
+  secret:
+    - envName: AIRFLOW_CONN_AWS_DEFAULT
+      secretName: airflow-connections
+      secretKey: AIRFLOW_CONN_AWS_DEFAULT
+
   # Webserver - minimal resources for development
   # Note: Airflow webserver requires at least 1Gi to avoid OOMKilled
   webserver:
@@ -75,9 +99,18 @@ airflow:
       delete_worker_pods: "True"
       delete_worker_pods_on_failure: "False"
 
+    elasticsearch:
+      enabled: false
+
     logging:
       logging_level: "DEBUG"
       remote_logging: "True"
+      remote_base_log_folder: "s3://lakehouse/airflow-logs/"
+      encryption_secret_key: ""
+
+    # S3 connection for remote logging (MinIO)
+    celery:
+      s3_conn_id: aws_default
 
   # Triggerer - disabled for development
   triggerer:
