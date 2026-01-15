@@ -3,7 +3,13 @@ minio:
   replicas: 1
   # Use SealedSecret for credentials
   existingSecret: "minio-creds"
-  
+
+  # Buckets to create
+  buckets:
+    - name: lakehouse
+      policy: none
+      purge: false
+
   # Environment variables
   environment:
     MINIO_BROWSER_REDIRECT_URL: "http://127.0.0.1:9001"
