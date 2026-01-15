@@ -15,6 +15,9 @@ platform/*/Chart.lock
 # ============================================
 # Terraform state and generated files
 infra/.terraform/
+
+# Helm charts downloaded by Terraform (not committed to Git)
+infra/charts/*.tgz
 infra/.terraform.lock.hcl
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
