@@ -107,6 +107,20 @@ airflow:
         scripts:
           create-iceberg-db.sql: |
             CREATE DATABASE iceberg;
+          create-sales-data-table.sql: |
+            CREATE TABLE IF NOT EXISTS sales_data (
+                id SERIAL PRIMARY KEY,
+                product_name VARCHAR(100),
+                quantity INTEGER,
+                price DECIMAL(10,2),
+                sale_date DATE
+            );
+            INSERT INTO sales_data (product_name, quantity, price, sale_date) VALUES
+                ('Laptop', 2, 999.99, '2026-01-10'),
+                ('Phone', 5, 599.99, '2026-01-11'),
+                ('Headphones', 10, 79.99, '2026-01-12'),
+                ('Keyboard', 3, 149.99, '2026-01-13'),
+                ('Mouse', 8, 49.99, '2026-01-14');
 
   # Redis (disabled for KubernetesExecutor)
   redis:
