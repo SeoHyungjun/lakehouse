@@ -69,7 +69,12 @@ airflow:
   # Scheduler configuration
   scheduler:
     replicas: 1
-    
+
+    # Disable log groomer since remote_logging is enabled
+    # Logs are stored in S3/MinIO, so local log cleanup is not needed
+    logGroomerSidecar:
+      enabled: false
+
     resources:
       requests:
         memory: 512Mi
@@ -149,6 +154,7 @@ airflow:
     core:
       # dags_folder: "/opt/airflow/dags"
       load_examples: "False"
+      load_connections: "True"
       executor: "KubernetesExecutor"
       parallelism: 32
       max_active_tasks_per_dag: 16
@@ -176,9 +182,12 @@ airflow:
       multi_namespace_mode: "False"
     
     logging:
-      remote_logging: "False"
+      remote_logging: "True"
       colored_console_log: "True"
       logging_level: "INFO"
+      remote_base_log_folder: "s3://lakehouse/airflow-logs/"
+      remote_logging_conn_id: "aws_default"
+      remote_log_conn_id: "aws_default"
     
     metrics:
       statsd_on: "False"
@@ -189,6 +198,8 @@ airflow:
       value: "KubernetesExecutor"
     - name: AIRFLOW__KUBERNETES__NAMESPACE
       value: "lakehouse-platform"
+    - name: AIRFLOW__S3_ENDPOINT_URL
+      value: "http://minio:9000"
 
   # Use existing secret for metadata connection
   data:
@@ -217,6 +228,36 @@ airflow:
     # Automatically run migrations on ArgoCD sync
     jobAnnotations:
       "argocd.argoproj.io/hook": Sync
+    # Add connection initialization script
+    command:
+      - /bin/sh
+      - -c
+      - |
+        airflow db migrate && \
+        python3 -c "
+        from airflow.models import Connection
+        from airflow import settings
+
+        session = settings.Session()
+
+        # Check if aws_default connection exists
+        conn = session.query(Connection).filter(Connection.conn_id == 'aws_default').first()
+
+        if not conn:
+            # Create aws_default connection for MinIO
+            conn = Connection(
+                conn_id='aws_default',
+                conn_type='aws',
+                login='lakehouse',
+                password='lakehouse',
+                extra='{\"endpoint_url\": \"http://minio:9000\"}',
+            )
+            session.add(conn)
+            session.commit()
+            print('Created aws_default connection for MinIO remote logging')
+        else:
+            print('aws_default connection already exists')
+        "
 
   # Ingress configuration
   ingress:

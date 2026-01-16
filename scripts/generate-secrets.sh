@@ -157,12 +157,15 @@ generate_sealed_secret "minio-creds" \
 
 # --- Airflow DAG Connections ---
 
-# Airflow Connections for DAGs (PostgreSQL)
-# MinIO connection uses boto3 with environment variables from minio-creds
+# Airflow Connections for DAGs (PostgreSQL, AWS S3/MinIO)
+# Loaded from .env file - see .env.example for format
+AIRFLOW_CONN_AWS_DEFAULT="${AIRFLOW_CONN_AWS_DEFAULT:-s3://lakehouse:lakehouse@lakehouse?__extra__=%7B%22endpoint_url%22%3A%22http%3A%2F%2Fminio%3A9000%22%7D}"
+
 generate_sealed_secret "airflow-connections" \
     "${ROOT_DIR}/platform/secrets/airflow-connections-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
-    --from-literal=AIRFLOW_CONN_POSTGRES_DEFAULT="${AIRFLOW_CONN_POSTGRES_DEFAULT}"
+    --from-literal=AIRFLOW_CONN_POSTGRES_DEFAULT="${AIRFLOW_CONN_POSTGRES_DEFAULT}" \
+    --from-literal=AIRFLOW_CONN_AWS_DEFAULT="${AIRFLOW_CONN_AWS_DEFAULT}"
 
 # Airflow GitSync Credentials
 # Used by GitSync to pull DAGs from lakehouse-dags repository

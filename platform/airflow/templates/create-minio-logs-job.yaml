@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-create-minio-logs
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  annotations:
+    # ArgoCD PostSync hook - runs after sync completes
+    argocd.argoproj.io/hook: PostSync
+    # Delete hook after it succeeds
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    metadata:
+      name: {{ .Release.Name }}-create-minio-logs
+    spec:
+      serviceAccountName: {{ .Release.Name }}-create-minio-logs-job
+      containers:
+        - name: create-minio-logs
+          image: amazon/aws-cli
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+
+              echo "Creating airflow-logs folder in MinIO..."
+              aws s3api put-object \
+                --bucket lakehouse \
+                --key airflow-logs/ \
+                --endpoint-url ${AWS_ENDPOINT_URL}
+              echo "Created airflow-logs folder in MinIO."
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-creds
+                  key: accessKeyId
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-creds
+                  key: secretAccessKey
+            - name: AWS_ENDPOINT_URL
+              value: "http://minio:9000"
+      restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-create-minio-logs-job
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  annotations:
+    # ArgoCD PostSync hook - runs after sync completes
+    argocd.argoproj.io/hook: PostSync
+    # Delete hook after it succeeds
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded

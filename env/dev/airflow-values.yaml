@@ -4,27 +4,20 @@
 airflow:
   # Environment variables for all airflow containers
   env:
-    - name: AIRFLOW_CONN_AWS_DEFAULT
-      valueFrom:
-        secretKeyRef:
-          name: airflow-connections
-          key: AIRFLOW_CONN_AWS_DEFAULT
-    - name: AWS_ACCESS_KEY_ID
-      valueFrom:
-        secretKeyRef:
-          name: minio-creds
-          key: accessKeyId
-    - name: AWS_SECRET_ACCESS_KEY
-      valueFrom:
-        secretKeyRef:
-          name: minio-creds
-          key: secretAccessKey
+    - name: AIRFLOW__S3_ENDPOINT_URL
+      value: "http://minio:9000"
 
   # Secrets for all airflow containers
   secret:
     - envName: AIRFLOW_CONN_AWS_DEFAULT
       secretName: airflow-connections
       secretKey: AIRFLOW_CONN_AWS_DEFAULT
+    - envName: AWS_ACCESS_KEY_ID
+      secretName: minio-creds
+      secretKey: accessKeyId
+    - envName: AWS_SECRET_ACCESS_KEY
+      secretName: minio-creds
+      secretKey: secretAccessKey
 
   # Webserver - minimal resources for development
   # Note: Airflow webserver requires at least 1Gi to avoid OOMKilled
@@ -85,6 +78,7 @@ airflow:
   config:
     core:
       dags_folder: "/opt/airflow/dags/repo/dags"
+      load_connections: "True"
       parallelism: 8
       max_active_tasks_per_dag: 4
       max_active_runs_per_dag: 4
@@ -106,6 +100,7 @@ airflow:
       logging_level: "DEBUG"
       remote_logging: "True"
       remote_base_log_folder: "s3://lakehouse/airflow-logs/"
+      remote_logging_conn_id: "aws_default"
       encryption_secret_key: ""
 
     # S3 connection for remote logging (MinIO)
