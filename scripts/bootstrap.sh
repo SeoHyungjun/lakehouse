@@ -170,13 +170,13 @@ provision_infrastructure() {
         IMAGES=(
             # Infrastructure components
             "docker.io/bitnami/sealed-secrets-controller:0.34.0"
-            "docker.io/bitnami/postgresql:latest"
+            "docker.io/bitnami/postgresql@sha256:e17be72045f391b966817cd05a54b4971040a7becffe2626322c925b4838aff8"
             "quay.io/argoproj/argocd:v2.9.3"
             "quay.io/minio/minio:RELEASE.2023-09-30T07-02-29Z"
             "quay.io/minio/mc:RELEASE.2023-09-29T16-41-22Z"
 
             # Platform components
-            "docker.io/tabulario/iceberg-rest:latest"
+            "docker.io/tabulario/iceberg-rest:1.6.0"
             "docker.io/trinodb/trino:440"
             "docker.io/apache/airflow:3.1.5-python3.13"
 
