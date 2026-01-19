@@ -178,6 +178,25 @@ generate_sealed_secret "git-sync-cred" \
     --from-literal=GIT_SYNC_USERNAME="${GITHUB_USERNAME}" \
     --from-literal=GIT_SYNC_PASSWORD="${GITHUB_TOKEN}"
 
+# Airflow DAG Environment Variables
+# Used by DAGs for external service connections
+# Infrastructure variables (TRINO): no prefix
+# External service variables (KDP, OAuth): KDP_ prefix
+generate_sealed_secret "airflow-secrets" \
+    "${ROOT_DIR}/platform/secrets/airflow-secrets-sealed-secret.yaml" \
+    "${PLATFORM_NAMESPACE}" \
+    --from-literal=TRINO_ENDPOINT_URL="${TRINO_ENDPOINT_URL:-http://trino-coordinator.lakehouse-platform:8080}" \
+    --from-literal=TRINO_CATALOG="${TRINO_CATALOG:-iceberg}" \
+    --from-literal=TRINO_SCHEMA="${TRINO_SCHEMA:-default}" \
+    --from-literal=KDP_REQUEST_URL="${KDP_REQUEST_URL}" \
+    --from-literal=KDP_REGION="${KDP_REGION}" \
+    --from-literal=KDP_OPT_TYPE="${KDP_OPT_TYPE}" \
+    --from-literal=KDP_TOKEN_URL="${KDP_TOKEN_URL}" \
+    --from-literal=KDP_OAUTH_USERNAME="${KDP_OAUTH_USERNAME}" \
+    --from-literal=KDP_OAUTH_CLIENT_ID="${KDP_OAUTH_CLIENT_ID_PROD}" \
+    --from-literal=KDP_OAUTH_CLIENT_SECRET="${KDP_OAUTH_CLIENT_SECRET_PROD}" \
+    --from-literal=KDP_OAUTH_PASSWORD="${KDP_OAUTH_PASSWORD_PROD}"
+
 
 log_info "All secrets generated successfully!"
 echo "Don't forget to commit the new SealedSecret YAML files."
