@@ -208,6 +208,70 @@ airflow:
   # Extra environment variables
   extraEnv: null
 
+  # Environment variables from secrets for DAGs
+  # Reference: https://airflow.apache.org/docs/apache-airflow-providers-cncf-kubernetes/stable/operators.html
+  secret:
+    - envName: AIRFLOW_CONN_AWS_DEFAULT
+      secretName: airflow-connections
+      secretKey: AIRFLOW_CONN_AWS_DEFAULT
+    - envName: AWS_ACCESS_KEY_ID
+      secretName: minio-creds
+      secretKey: accessKeyId
+    - envName: AWS_SECRET_ACCESS_KEY
+      secretName: minio-creds
+      secretKey: secretAccessKey
+    - envName: MINIO_ACCESS_KEY
+      secretName: minio-creds
+      secretKey: accessKeyId
+    - envName: MINIO_SECRET_KEY
+      secretName: minio-creds
+      secretKey: secretAccessKey
+    - envName: MINIO_ENDPOINT_URL
+      secretName: minio-creds
+      secretKey: MINIO_ENDPOINT_URL
+    - envName: MINIO_BUCKET
+      secretName: minio-creds
+      secretKey: MINIO_BUCKET
+    - envName: TRINO_ENDPOINT_URL
+      secretName: airflow-secrets
+      secretKey: TRINO_ENDPOINT_URL
+    - envName: TRINO_CATALOG
+      secretName: airflow-secrets
+      secretKey: TRINO_CATALOG
+    - envName: TRINO_SCHEMA
+      secretName: airflow-secrets
+      secretKey: TRINO_SCHEMA
+    - envName: POSTGRES_USERNAME
+      secretName: postgres-creds
+      secretKey: username
+    - envName: POSTGRES_PASSWORD
+      secretName: postgres-creds
+      secretKey: password
+    - envName: KDP_REQUEST_URL
+      secretName: airflow-secrets
+      secretKey: KDP_REQUEST_URL
+    - envName: KDP_REGION
+      secretName: airflow-secrets
+      secretKey: KDP_REGION
+    - envName: OPT_TYPE
+      secretName: airflow-secrets
+      secretKey: OPT_TYPE
+    - envName: TOKEN_URL
+      secretName: airflow-secrets
+      secretKey: TOKEN_URL
+    - envName: OAUTH_USERNAME
+      secretName: airflow-secrets
+      secretKey: OAUTH_USERNAME
+    - envName: OAUTH_CLIENT_ID
+      secretName: airflow-secrets
+      secretKey: OAUTH_CLIENT_ID_PROD
+    - envName: OAUTH_CLIENT_SECRET
+      secretName: airflow-secrets
+      secretKey: OAUTH_CLIENT_SECRET_PROD
+    - envName: OAUTH_PASSWORD
+      secretName: airflow-secrets
+      secretKey: OAUTH_PASSWORD_PROD
+
   # Extra environment variables from secrets
   # Note: extraEnvFrom expects a templated string, not an array
   extraEnvFrom: |

@@ -7,18 +7,6 @@ airflow:
     - name: AIRFLOW__S3_ENDPOINT_URL
       value: "http://minio:9000"
 
-  # Secrets for all airflow containers
-  secret:
-    - envName: AIRFLOW_CONN_AWS_DEFAULT
-      secretName: airflow-connections
-      secretKey: AIRFLOW_CONN_AWS_DEFAULT
-    - envName: AWS_ACCESS_KEY_ID
-      secretName: minio-creds
-      secretKey: accessKeyId
-    - envName: AWS_SECRET_ACCESS_KEY
-      secretName: minio-creds
-      secretKey: secretAccessKey
-
   # Webserver - minimal resources for development
   # Note: Airflow webserver requires at least 1Gi to avoid OOMKilled
   webserver:
