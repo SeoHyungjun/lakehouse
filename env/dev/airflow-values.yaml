@@ -69,6 +69,7 @@ airflow:
       expose_config: "True"
       rbac: "False"
       authenticate: "False"
+      base_url: "http://airflow-api-server.lakehouse-platform.svc.cluster.local:8080"
 
     kubernetes:
       delete_worker_pods: "True"
@@ -76,6 +77,7 @@ airflow:
 
     logging:
       logging_level: "DEBUG"
+      remote_logging: "True"
 
   # Triggerer - disabled for development
   triggerer:
