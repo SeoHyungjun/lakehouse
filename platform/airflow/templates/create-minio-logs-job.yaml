@@ -22,6 +22,12 @@ spec:
             - |
               set -e
 
+              echo "Creating kdp bucket in MinIO..."
+              aws s3api create-bucket \
+                --bucket kdp \
+                --endpoint-url ${AWS_ENDPOINT_URL} 2>/dev/null || echo "Bucket kdp already exists"
+              echo "kdp bucket ready."
+
               echo "Creating airflow-logs folder in MinIO..."
               aws s3api put-object \
                 --bucket lakehouse \

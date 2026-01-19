@@ -20,7 +20,6 @@ Airflow KubernetesExecutor를 사용하는 경우, DAG에서 컨테이너 작업
 | 환경변수 | 설명 | Secret |
 |---------|------|--------|
 | `MINIO_ENDPOINT_URL` | MinIO 엔드포인트 URL | `minio-creds` |
-| `MINIO_BUCKET` | MinIO 버킷 이름 | `minio-creds` |
 | `AWS_ACCESS_KEY_ID` | MinIO/S3 액세스 키 | `minio-creds` |
 | `AWS_SECRET_ACCESS_KEY` | MinIO/S3 시크릿 키 | `minio-creds` |
 | `TRINO_ENDPOINT_URL` | Trino 엔드포인트 URL | `airflow-secrets` |
@@ -73,7 +72,6 @@ with DAG(
         arguments=['''
             import os
             print(f"MinIO Endpoint: {os.getenv('MINIO_ENDPOINT_URL')}")
-            print(f"MinIO Bucket: {os.getenv('MINIO_BUCKET')}")
             print(f"Trino Endpoint: {os.getenv('TRINO_ENDPOINT_URL')}")
             print(f"Trino Catalog: {os.getenv('TRINO_CATALOG')}")
             print(f"Trino Schema: {os.getenv('TRINO_SCHEMA')}")
