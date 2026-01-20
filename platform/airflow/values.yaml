@@ -229,9 +229,6 @@ airflow:
     - envName: MINIO_ENDPOINT_URL
       secretName: minio-creds
       secretKey: MINIO_ENDPOINT_URL
-    - envName: MINIO_BUCKET
-      secretName: minio-creds
-      secretKey: MINIO_BUCKET
     - envName: TRINO_ENDPOINT_URL
       secretName: airflow-secrets
       secretKey: TRINO_ENDPOINT_URL

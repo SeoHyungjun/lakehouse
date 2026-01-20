@@ -200,5 +200,49 @@ generate_sealed_secret "airflow-secrets" \
     --from-literal=AZURE_CONTAINER_NAME="${AZURE_CONTAINER_NAME}" \
 
 
+# ==============================================================================
+# ArgoCD Repository Secret (argocd namespace)
+# ==============================================================================
+# Used by ArgoCD to pull platform manifests from Git repository
+# This secret needs special labels for ArgoCD to recognize it as a repository
+
+log_info "Creating ArgoCD repository secret..."
+
+# Create temporary secret file with labels
+TEMP_SECRET=$(mktemp)
+cat > "$TEMP_SECRET" <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lakehouse-repo-cred
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: ${ARGOCD_REPOURL:-https://github.sec.samsung.net/ProductivityAI/lakehouse.git}
+  username: ${GITHUB_USERNAME}
+  password: ${GITHUB_TOKEN}
+EOF
+
+# Seal the secret
+kubeseal \
+    --controller-name "${SEALED_SECRETS_CONTROLLER}" \
+    --controller-namespace "${SEALED_SECRETS_NAMESPACE}" \
+    --format yaml \
+    < "$TEMP_SECRET" \
+    > "${ROOT_DIR}/platform/secrets/argocd-repo-cred-sealed-secret.yaml"
+
+# Clean up
+rm -f "$TEMP_SECRET"
+
+if [ $? -eq 0 ]; then
+    log_info "Generated ${ROOT_DIR}/platform/secrets/argocd-repo-cred-sealed-secret.yaml"
+else
+    log_error "Failed to generate argocd-repo-cred sealed secret"
+    exit 1
+fi
+
+
 log_info "All secrets generated successfully!"
 echo "Don't forget to commit the new SealedSecret YAML files."
