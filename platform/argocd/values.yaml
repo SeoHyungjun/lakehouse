@@ -114,7 +114,11 @@ argo-cd:
     params:
       server.insecure: true
       application.instanceLabelKey: argocd.argoproj.io/instance
-    
+
+    # Admin password (BCrypt hash for "lakehouse")
+    secret:
+      argocdServerAdminPassword: $2b$10$gTYZ1fk4dfarv7hddCIRnuNTTuBo3Y1X96OxsqFJ0f9juX60ajeT6
+
     # RBAC configuration
     rbac:
       policy.default: role:readonly
