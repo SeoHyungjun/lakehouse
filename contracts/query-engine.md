@@ -148,7 +148,7 @@ trino:
 connector.name=iceberg
 iceberg.catalog.type=rest
 iceberg.rest.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
-iceberg.rest.warehouse=s3://lakehouse-dev-warehouse/
+iceberg.rest.warehouse=s3://lakehouse/
 
 # S3 configuration (references object-storage contract)
 fs.native-s3.enabled=true
@@ -206,7 +206,7 @@ SELECT * FROM iceberg.sales.customers WHERE region = 'us-east';
 **Forbidden**:
 ```sql
 -- Direct S3 path access (NOT ALLOWED)
-SELECT * FROM s3."s3://lakehouse-dev-warehouse/sales/orders/data/*.parquet";
+SELECT * FROM s3."s3://lakehouse/sales/orders/data/*.parquet";
 ```
 
 ### 6.2 No Direct Object Path Access

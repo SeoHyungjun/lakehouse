@@ -420,7 +420,7 @@ s3:
 
 iceberg:
   catalog_uri: ${ICEBERG_CATALOG_URI}
-  warehouse: s3://lakehouse-dev-warehouse/
+  warehouse: s3://lakehouse/
 ```
 
 ### 6.3 Environment Variable Naming

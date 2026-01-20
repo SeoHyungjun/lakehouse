@@ -6,7 +6,13 @@ minio:
 
   # Buckets to create
   buckets:
-    - name: lakehouse
+    - name: lakehouse-dev-raw
+      policy: none
+      purge: false
+    - name: lakehouse-dev-warehouse
+      policy: none
+      purge: false
+    - name: lakehouse-dev-temp
       policy: none
       purge: false
 

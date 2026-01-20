@@ -580,7 +580,7 @@ icebergCatalog:
   replicaCount: 1
   
   config:
-    warehouse: s3://lakehouse-dev-warehouse/
+    warehouse: s3://lakehouse/
     s3:
       endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
       accessKeyId: minioadmin

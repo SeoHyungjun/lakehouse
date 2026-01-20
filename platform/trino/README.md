@@ -174,7 +174,7 @@ additionalCatalogs:
     connector.name=iceberg
     iceberg.catalog.type=rest
     iceberg.rest.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
-    iceberg.rest.warehouse=s3://lakehouse-dev-warehouse/
+    iceberg.rest.warehouse=s3://lakehouse/
     
     # S3 configuration
     fs.native-s3.enabled=true

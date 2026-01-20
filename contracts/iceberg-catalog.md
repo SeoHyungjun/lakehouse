@@ -113,7 +113,7 @@ iceberg:
   catalog:
     type: rest
     uri: http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
-    warehouse: s3://lakehouse-dev-warehouse/
+    warehouse: s3://lakehouse/
     credential: <access-token>  # optional
 ```
 
@@ -146,7 +146,7 @@ iceberg:
   catalog:
     type: jdbc
     uri: jdbc:postgresql://postgres.lakehouse-platform.svc.cluster.local:5432/iceberg
-    warehouse: s3://lakehouse-dev-warehouse/
+    warehouse: s3://lakehouse/
     jdbc:
       username: ${JDBC_USERNAME}
       password: ${JDBC_PASSWORD}
@@ -195,7 +195,7 @@ iceberg:
   catalog:
     type: hive
     uri: thrift://hive-metastore.lakehouse-platform.svc.cluster.local:9083
-    warehouse: s3://lakehouse-dev-warehouse/
+    warehouse: s3://lakehouse/
     hive:
       conf_dir: /etc/hive/conf  # optional
 ```
@@ -263,7 +263,7 @@ iceberg:
 **Examples**:
 ```yaml
 # Development
-warehouse: s3://lakehouse-dev-warehouse/
+warehouse: s3://lakehouse/
 
 # Production with prefix
 warehouse: s3://lakehouse-prod-warehouse/iceberg/
@@ -275,7 +275,7 @@ warehouse: s3://lakehouse-prod-warehouse/tenant-a/
 ### 8.2 Warehouse Structure
 
 ```
-s3://lakehouse-dev-warehouse/
+s3://lakehouse/
   sales/                    # namespace (database)
     orders/                 # table
       metadata/
@@ -505,7 +505,7 @@ CALL iceberg.system.expire_snapshots('sales.orders', TIMESTAMP '2024-12-20 00:00
 
 **Example**:
 ```
-s3://lakehouse-dev-warehouse/sales/orders/metadata/
+s3://lakehouse/sales/orders/metadata/
   v1.metadata.json
   v2.metadata.json
   v3.metadata.json
@@ -621,7 +621,7 @@ iceberg:
   catalog:
     type: rest
     uri: http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
-    warehouse: s3://lakehouse-dev-warehouse/
+    warehouse: s3://lakehouse/
     credential: ${ICEBERG_CATALOG_TOKEN}
     
   # Object storage configuration (references object-storage contract)
@@ -640,7 +640,7 @@ iceberg:
   catalog:
     type: jdbc
     uri: jdbc:postgresql://postgres.lakehouse-platform.svc.cluster.local:5432/iceberg
-    warehouse: s3://lakehouse-dev-warehouse/
+    warehouse: s3://lakehouse/
     jdbc:
       username: ${JDBC_USERNAME}
       password: ${JDBC_PASSWORD}

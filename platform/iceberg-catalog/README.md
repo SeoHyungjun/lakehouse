@@ -122,7 +122,7 @@ helm install iceberg-catalog ./platform/iceberg-catalog \
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `replicaCount` | Number of catalog replicas | `1` |
-| `catalog.warehouse` | S3 warehouse location | `s3://lakehouse-dev-warehouse/` |
+| `catalog.warehouse` | S3 warehouse location | `s3://lakehouse/` |
 | `catalog.backend` | Catalog backend type | `jdbc` |
 | `catalog.s3.endpoint` | S3 endpoint (DNS-based) | `http://minio.lakehouse-platform.svc.cluster.local:9000` |
 | `catalog.s3.accessKeyId` | S3 access key | `admin` |
@@ -207,7 +207,7 @@ The catalog connects to MinIO for storing table data and metadata:
 
 ```yaml
 catalog:
-  warehouse: s3://lakehouse-dev-warehouse/
+  warehouse: s3://lakehouse/
   s3:
     endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
 ```
