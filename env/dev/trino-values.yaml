@@ -24,7 +24,7 @@ trino:
       connector.name=iceberg
       iceberg.catalog.type=rest
       iceberg.rest-catalog.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
-      iceberg.rest-catalog.warehouse=s3://lakehouse/
+      iceberg.rest-catalog.warehouse=s3://lakehouse-dev-warehouse/
       fs.native-s3.enabled=true
       s3.endpoint=http://minio.lakehouse-platform.svc.cluster.local:9000
       s3.path-style-access=true

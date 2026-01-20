@@ -82,7 +82,7 @@ airflow:
     logging:
       logging_level: "DEBUG"
       remote_logging: "True"
-      remote_base_log_folder: "s3://lakehouse/airflow-logs/"
+      remote_base_log_folder: "s3://lakehouse-dev-raw/airflow-logs/"
       remote_logging_conn_id: "aws_default"
       encryption_secret_key: ""
 
