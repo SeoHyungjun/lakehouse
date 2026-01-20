@@ -195,7 +195,9 @@ generate_sealed_secret "airflow-secrets" \
     --from-literal=KDP_OAUTH_USERNAME="${KDP_OAUTH_USERNAME}" \
     --from-literal=KDP_OAUTH_CLIENT_ID="${KDP_OAUTH_CLIENT_ID_PROD}" \
     --from-literal=KDP_OAUTH_CLIENT_SECRET="${KDP_OAUTH_CLIENT_SECRET_PROD}" \
-    --from-literal=KDP_OAUTH_PASSWORD="${KDP_OAUTH_PASSWORD_PROD}"
+    --from-literal=KDP_OAUTH_PASSWORD="${KDP_OAUTH_PASSWORD_PROD}" \
+    --from-literal=AZURE_CONNECTION_STRING="${AZURE_CONNECTION_STRING}" \
+    --from-literal=AZURE_CONTAINER_NAME="${AZURE_CONTAINER_NAME}" \
 
 
 log_info "All secrets generated successfully!"

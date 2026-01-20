@@ -271,6 +271,12 @@ airflow:
     - envName: KDP_OAUTH_PASSWORD
       secretName: airflow-secrets
       secretKey: KDP_OAUTH_PASSWORD
+    - envName: AZURE_CONNECTION_STRING
+      secretName: airflow-secrets
+      secretKey: AZURE_CONNECTION_STRING
+    - envName: AZURE_CONTAINER_NAME
+      secretName: airflow-secrets
+      secretKey: AZURE_CONTAINER_NAME
 
   # Extra environment variables from secrets
   # Note: extraEnvFrom expects a templated string, not an array
