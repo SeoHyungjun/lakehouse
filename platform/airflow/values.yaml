@@ -89,7 +89,8 @@ airflow:
     image:
       registry: docker.io
       repository: bitnami/postgresql
-      tag: "latest"
+      tag: ""
+      digest: "sha256:9c706432c2c75663aad68eef7eb73e40b5736ad888c8c45b5b09df2c3f31f78b"
     auth:
       existingSecret: postgres-creds
       database: airflow

@@ -170,7 +170,7 @@ provision_infrastructure() {
         IMAGES=(
             # Infrastructure components
             "docker.io/bitnami/sealed-secrets-controller:0.34.0"
-            "docker.io/bitnami/postgresql@sha256:e17be72045f391b966817cd05a54b4971040a7becffe2626322c925b4838aff8"
+            "docker.io/bitnami/postgresql@sha256:9c706432c2c75663aad68eef7eb73e40b5736ad888c8c45b5b09df2c3f31f78b"
             "quay.io/argoproj/argocd:v2.9.3"
             "quay.io/minio/minio:RELEASE.2023-09-30T07-02-29Z"
             "quay.io/minio/mc:RELEASE.2023-09-29T16-41-22Z"
