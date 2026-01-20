@@ -198,8 +198,6 @@ airflow:
       value: "KubernetesExecutor"
     - name: AIRFLOW__KUBERNETES__NAMESPACE
       value: "lakehouse-platform"
-    - name: AIRFLOW__S3_ENDPOINT_URL
-      value: "http://minio:9000"
 
   # Use existing secret for metadata connection
   data:
@@ -229,21 +227,47 @@ airflow:
     - envName: MINIO_ENDPOINT_URL
       secretName: minio-creds
       secretKey: MINIO_ENDPOINT_URL
-    - envName: TRINO_ENDPOINT_URL
+    # DAG에서 사용하는 AIRFLOW_ 접두사 환경변수
+    - envName: AIRFLOW_MINIO_ENDPOINT_URL
+      secretName: minio-creds
+      secretKey: MINIO_ENDPOINT_URL
+    - envName: AIRFLOW_MINIO_ACCESS_KEY
+      secretName: minio-creds
+      secretKey: accessKeyId
+    - envName: AIRFLOW_MINIO_SECRET_KEY
+      secretName: minio-creds
+      secretKey: secretAccessKey
+    - envName: AIRFLOW_MINIO_BUCKET
+      secretName: minio-creds
+      secretKey: MINIO_BUCKET
+    # DAG에서 사용하는 AIRFLOW_ 접두사 환경변수
+    - envName: AIRFLOW_TRINO_ENDPOINT_URL
       secretName: airflow-secrets
-      secretKey: TRINO_ENDPOINT_URL
-    - envName: TRINO_CATALOG
+      secretKey: AIRFLOW_TRINO_ENDPOINT_URL
+    - envName: AIRFLOW_TRINO_CATALOG
       secretName: airflow-secrets
-      secretKey: TRINO_CATALOG
-    - envName: TRINO_SCHEMA
+      secretKey: AIRFLOW_TRINO_CATALOG
+    - envName: AIRFLOW_TRINO_SCHEMA
       secretName: airflow-secrets
-      secretKey: TRINO_SCHEMA
-    - envName: POSTGRES_USERNAME
-      secretName: postgres-creds
-      secretKey: username
-    - envName: POSTGRES_PASSWORD
-      secretName: postgres-creds
-      secretKey: password
+      secretKey: AIRFLOW_TRINO_SCHEMA
+    - envName: AIRFLOW_POSTGRES_HOST
+      secretName: airflow-secrets
+      secretKey: AIRFLOW_POSTGRES_HOST
+    - envName: AIRFLOW_POSTGRES_PORT
+      secretName: airflow-secrets
+      secretKey: AIRFLOW_POSTGRES_PORT
+    - envName: AIRFLOW_POSTGRES_DATABASE
+      secretName: airflow-secrets
+      secretKey: AIRFLOW_POSTGRES_DATABASE
+    - envName: AIRFLOW_POSTGRES_USERNAME
+      secretName: airflow-secrets
+      secretKey: AIRFLOW_POSTGRES_USERNAME
+    - envName: AIRFLOW_POSTGRES_PASSWORD
+      secretName: airflow-secrets
+      secretKey: AIRFLOW_POSTGRES_PASSWORD
+    - envName: AIRFLOW_CONN_POSTGRES_DEFAULT
+      secretName: airflow-connections
+      secretKey: AIRFLOW_CONN_POSTGRES_DEFAULT
     - envName: KDP_REQUEST_URL
       secretName: airflow-secrets
       secretKey: KDP_REQUEST_URL
@@ -259,15 +283,45 @@ airflow:
     - envName: KDP_OAUTH_USERNAME
       secretName: airflow-secrets
       secretKey: KDP_OAUTH_USERNAME
-    - envName: KDP_OAUTH_CLIENT_ID
+    - envName: KDP_OAUTH_CLIENT_ID_PROD
       secretName: airflow-secrets
-      secretKey: KDP_OAUTH_CLIENT_ID
-    - envName: KDP_OAUTH_CLIENT_SECRET
+      secretKey: KDP_OAUTH_CLIENT_ID_PROD
+    - envName: KDP_OAUTH_CLIENT_SECRET_PROD
       secretName: airflow-secrets
-      secretKey: KDP_OAUTH_CLIENT_SECRET
-    - envName: KDP_OAUTH_PASSWORD
+      secretKey: KDP_OAUTH_CLIENT_SECRET_PROD
+    - envName: KDP_OAUTH_PASSWORD_PROD
       secretName: airflow-secrets
-      secretKey: KDP_OAUTH_PASSWORD
+      secretKey: KDP_OAUTH_PASSWORD_PROD
+    - envName: KDP_OAUTH_CLIENT_ID_DEV
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_CLIENT_ID_DEV
+    - envName: KDP_OAUTH_CLIENT_SECRET_DEV
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_CLIENT_SECRET_DEV
+    - envName: KDP_OAUTH_PASSWORD_DEV
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_PASSWORD_DEV
+    - envName: KDP_OAUTH_USERNAME_USER2
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_USERNAME_USER2
+    - envName: KDP_OAUTH_CLIENT_ID_USER2_PROD
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_CLIENT_ID_USER2_PROD
+    - envName: KDP_OAUTH_CLIENT_SECRET_USER2_PROD
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_CLIENT_SECRET_USER2_PROD
+    - envName: KDP_OAUTH_PASSWORD_USER2_PROD
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_PASSWORD_USER2_PROD
+    - envName: KDP_OAUTH_CLIENT_ID_USER2_DEV
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_CLIENT_ID_USER2_DEV
+    - envName: KDP_OAUTH_CLIENT_SECRET_USER2_DEV
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_CLIENT_SECRET_USER2_DEV
+    - envName: KDP_OAUTH_PASSWORD_USER2_DEV
+      secretName: airflow-secrets
+      secretKey: KDP_OAUTH_PASSWORD_USER2_DEV
     - envName: AZURE_CONNECTION_STRING
       secretName: airflow-secrets
       secretKey: AZURE_CONNECTION_STRING
@@ -284,6 +338,8 @@ airflow:
         name: minio-creds
     - secretRef:
         name: git-sync-cred
+    - secretRef:
+        name: airflow-secrets
 
   # Database migration job configuration
   # Reference: https://github.com/apache/airflow/tree/main/chart
@@ -302,10 +358,17 @@ airflow:
       - |
         airflow db migrate && \
         python3 -c "
+        import os
+        import json
         from airflow.models import Connection
         from airflow import settings
 
         session = settings.Session()
+
+        # Get MinIO endpoint from environment variable (from minio-creds secret)
+        minio_endpoint = os.environ.get('MINIO_ENDPOINT_URL', 'http://minio:9000')
+        minio_access_key = os.environ.get('MINIO_ACCESS_KEY', 'lakehouse')
+        minio_secret_key = os.environ.get('MINIO_SECRET_KEY', 'lakehouse')
 
         # Check if aws_default connection exists
         conn = session.query(Connection).filter(Connection.conn_id == 'aws_default').first()
@@ -315,15 +378,15 @@ airflow:
             conn = Connection(
                 conn_id='aws_default',
                 conn_type='aws',
-                login='lakehouse',
-                password='lakehouse',
-                extra='{\"endpoint_url\": \"http://minio:9000\"}',
+                login=minio_access_key,
+                password=minio_secret_key,
+                extra=json.dumps({'endpoint_url': minio_endpoint}),
             )
             session.add(conn)
             session.commit()
-            print('Created aws_default connection for MinIO remote logging')
+            print(f'Created aws_default connection for MinIO remote logging (endpoint: {minio_endpoint})')
         else:
-            print('aws_default connection already exists')
+            print(f'aws_default connection already exists')
         "
 
   # Ingress configuration

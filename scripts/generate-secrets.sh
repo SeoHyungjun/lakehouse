@@ -104,15 +104,16 @@ generate_sealed_secret "airflow-fernet-key" \
     --from-literal=fernet-key="${AIRFLOW_FERNET_KEY}"
 
 # Airflow Admin User Credentials
-# Airflow 3.0.2 requires: admin-user, admin-password, admin-email, admin-firstname, admin-lastname
+# Airflow 3.0.2 requires: admin-user, admin-password
+# Optional: admin-email, admin-firstname, admin-lastname
 generate_sealed_secret "airflow-admin-password" \
     "${ROOT_DIR}/platform/secrets/airflow-admin-password-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=admin-user="${AIRFLOW_ADMIN_USER}" \
     --from-literal=admin-password="${AIRFLOW_ADMIN_PASSWORD}" \
-    --from-literal=admin-email="${AIRFLOW_ADMIN_EMAIL:-admin@lakehouse.local}" \
-    --from-literal=admin-firstname="${AIRFLOW_ADMIN_FIRSTNAME:-Admin}" \
-    --from-literal=admin-lastname="${AIRFLOW_ADMIN_LASTNAME:-User}"
+    ${AIRFLOW_ADMIN_EMAIL:+--from-literal=admin-email="${AIRFLOW_ADMIN_EMAIL}"} \
+    ${AIRFLOW_ADMIN_FIRSTNAME:+--from-literal=admin-firstname="${AIRFLOW_ADMIN_FIRSTNAME}"} \
+    ${AIRFLOW_ADMIN_LASTNAME:+--from-literal=admin-lastname="${AIRFLOW_ADMIN_LASTNAME}"}
 
 # Airflow Database Connection String
 # Note: Hostname assumes release name 'airflow' and namespace 'lakehouse-platform'
@@ -153,19 +154,36 @@ generate_sealed_secret "minio-creds" \
     --from-literal=rootPassword="${MINIO_ROOT_PASSWORD}" \
     --from-literal=accessKeyId="${MINIO_ROOT_USER}" \
     --from-literal=secretAccessKey="${MINIO_ROOT_PASSWORD}" \
-    --from-literal=MINIO_ENDPOINT_URL="${MINIO_ENDPOINT_URL:-http://minio.lakehouse-platform:9000}"
+    --from-literal=MINIO_ENDPOINT_URL="${AIRFLOW_MINIO_ENDPOINT_URL}" \
+    --from-literal=MINIO_BUCKET="${AIRFLOW_MINIO_BUCKET}"
 
 # --- Airflow DAG Connections ---
 
 # Airflow Connections for DAGs (PostgreSQL, AWS S3/MinIO)
 # Loaded from .env file - see .env.example for format
-AIRFLOW_CONN_AWS_DEFAULT="${AIRFLOW_CONN_AWS_DEFAULT:-s3://lakehouse:lakehouse@lakehouse?__extra__=%7B%22endpoint_url%22%3A%22http%3A%2F%2Fminio%3A9000%22%7D}"
+# NOTE: AIRFLOW_CONN_AWS_DEFAULT __extra__ needs to be URL encoded for Airflow to parse correctly
+# Convert JSON extra to URL-encoded format
+AIRFLOW_CONN_AWS_DEFAULT_ENCODED=$(python3 -c "
+import urllib.parse
+import json
+# Parse the connection URL
+conn_str = '${AIRFLOW_CONN_AWS_DEFAULT}'
+# Split into base and extra parts
+if '__extra__=' in conn_str:
+    base, extra = conn_str.split('__extra__=', 1)
+    # URL encode the extra JSON
+    extra_encoded = urllib.parse.quote(extra, safe='')
+    encoded_url = base + '__extra__=' + extra_encoded
+else:
+    encoded_url = conn_str
+print(encoded_url)
+")
 
 generate_sealed_secret "airflow-connections" \
     "${ROOT_DIR}/platform/secrets/airflow-connections-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
     --from-literal=AIRFLOW_CONN_POSTGRES_DEFAULT="${AIRFLOW_CONN_POSTGRES_DEFAULT}" \
-    --from-literal=AIRFLOW_CONN_AWS_DEFAULT="${AIRFLOW_CONN_AWS_DEFAULT}"
+    --from-literal=AIRFLOW_CONN_AWS_DEFAULT="${AIRFLOW_CONN_AWS_DEFAULT_ENCODED}"
 
 # Airflow GitSync Credentials
 # Used by GitSync to pull DAGs from lakehouse-dags repository
@@ -180,22 +198,37 @@ generate_sealed_secret "git-sync-cred" \
 
 # Airflow DAG Environment Variables
 # Used by DAGs for external service connections
-# Infrastructure variables (TRINO): no prefix
-# External service variables (KDP, OAuth): KDP_ prefix
+# Infrastructure variables: AIRFLOW_ prefix (AIRFLOW_TRINO_*, AIRFLOW_POSTGRES_*)
+# External service variables (KDP, OAuth, AZURE): system prefix (KDP_*, AZURE_*)
 generate_sealed_secret "airflow-secrets" \
     "${ROOT_DIR}/platform/secrets/airflow-secrets-sealed-secret.yaml" \
     "${PLATFORM_NAMESPACE}" \
-    --from-literal=TRINO_ENDPOINT_URL="${TRINO_ENDPOINT_URL:-http://trino-coordinator.lakehouse-platform:8080}" \
-    --from-literal=TRINO_CATALOG="${TRINO_CATALOG:-iceberg}" \
-    --from-literal=TRINO_SCHEMA="${TRINO_SCHEMA:-default}" \
+    --from-literal=AIRFLOW_TRINO_ENDPOINT_URL="${AIRFLOW_TRINO_ENDPOINT_URL}" \
+    --from-literal=AIRFLOW_TRINO_CATALOG="${AIRFLOW_TRINO_CATALOG}" \
+    --from-literal=AIRFLOW_TRINO_SCHEMA="${AIRFLOW_TRINO_SCHEMA}" \
+    --from-literal=AIRFLOW_POSTGRES_HOST="${AIRFLOW_POSTGRES_HOST}" \
+    --from-literal=AIRFLOW_POSTGRES_PORT="${AIRFLOW_POSTGRES_PORT}" \
+    --from-literal=AIRFLOW_POSTGRES_DATABASE="${AIRFLOW_POSTGRES_DATABASE}" \
+    --from-literal=AIRFLOW_POSTGRES_USERNAME="${AIRFLOW_POSTGRES_USERNAME}" \
+    --from-literal=AIRFLOW_POSTGRES_PASSWORD="${AIRFLOW_POSTGRES_PASSWORD}" \
     --from-literal=KDP_REQUEST_URL="${KDP_REQUEST_URL}" \
     --from-literal=KDP_REGION="${KDP_REGION}" \
     --from-literal=KDP_OPT_TYPE="${KDP_OPT_TYPE}" \
     --from-literal=KDP_TOKEN_URL="${KDP_TOKEN_URL}" \
     --from-literal=KDP_OAUTH_USERNAME="${KDP_OAUTH_USERNAME}" \
-    --from-literal=KDP_OAUTH_CLIENT_ID="${KDP_OAUTH_CLIENT_ID_PROD}" \
-    --from-literal=KDP_OAUTH_CLIENT_SECRET="${KDP_OAUTH_CLIENT_SECRET_PROD}" \
-    --from-literal=KDP_OAUTH_PASSWORD="${KDP_OAUTH_PASSWORD_PROD}" \
+    --from-literal=KDP_OAUTH_CLIENT_ID_PROD="${KDP_OAUTH_CLIENT_ID_PROD}" \
+    --from-literal=KDP_OAUTH_CLIENT_SECRET_PROD="${KDP_OAUTH_CLIENT_SECRET_PROD}" \
+    --from-literal=KDP_OAUTH_PASSWORD_PROD="${KDP_OAUTH_PASSWORD_PROD}" \
+    --from-literal=KDP_OAUTH_CLIENT_ID_DEV="${KDP_OAUTH_CLIENT_ID_DEV}" \
+    --from-literal=KDP_OAUTH_CLIENT_SECRET_DEV="${KDP_OAUTH_CLIENT_SECRET_DEV}" \
+    --from-literal=KDP_OAUTH_PASSWORD_DEV="${KDP_OAUTH_PASSWORD_DEV}" \
+    --from-literal=KDP_OAUTH_USERNAME_USER2="${KDP_OAUTH_USERNAME_USER2}" \
+    --from-literal=KDP_OAUTH_CLIENT_ID_USER2_PROD="${KDP_OAUTH_CLIENT_ID_USER2_PROD}" \
+    --from-literal=KDP_OAUTH_CLIENT_SECRET_USER2_PROD="${KDP_OAUTH_CLIENT_SECRET_USER2_PROD}" \
+    --from-literal=KDP_OAUTH_PASSWORD_USER2_PROD="${KDP_OAUTH_PASSWORD_USER2_PROD}" \
+    --from-literal=KDP_OAUTH_CLIENT_ID_USER2_DEV="${KDP_OAUTH_CLIENT_ID_USER2_DEV}" \
+    --from-literal=KDP_OAUTH_CLIENT_SECRET_USER2_DEV="${KDP_OAUTH_CLIENT_SECRET_USER2_DEV}" \
+    --from-literal=KDP_OAUTH_PASSWORD_USER2_DEV="${KDP_OAUTH_PASSWORD_USER2_DEV}" \
     --from-literal=AZURE_CONNECTION_STRING="${AZURE_CONNECTION_STRING}" \
     --from-literal=AZURE_CONTAINER_NAME="${AZURE_CONTAINER_NAME}" \
 
@@ -220,7 +253,7 @@ metadata:
     argocd.argoproj.io/secret-type: repository
 stringData:
   type: git
-  url: ${ARGOCD_REPOURL:-https://github.sec.samsung.net/ProductivityAI/lakehouse.git}
+  url: https://github.sec.samsung.net/ProductivityAI/lakehouse.git
   username: ${GITHUB_USERNAME}
   password: ${GITHUB_TOKEN}
 EOF

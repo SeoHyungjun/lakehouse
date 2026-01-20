@@ -2,11 +2,6 @@
 # Used by ArgoCD Application: platform/argocd/templates/airflow-application.yaml
 
 airflow:
-  # Environment variables for all airflow containers
-  env:
-    - name: AIRFLOW__S3_ENDPOINT_URL
-      value: "http://minio:9000"
-
   # Webserver - minimal resources for development
   # Note: Airflow webserver requires at least 1Gi to avoid OOMKilled
   webserver:
