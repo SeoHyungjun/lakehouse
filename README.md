@@ -84,9 +84,6 @@ trino --server localhost:8080 --catalog iceberg --schema default
 ③ Iceberg Catalog stores metadata files in MinIO
 ④ Airflow sends SQL queries to Trino only
 ```
-      │ (Data Storage) │
-      └────────────────┘
-```
 
 ---
 
@@ -107,10 +104,8 @@ lakehouse/
 │   ├── trino/
 │   ├── airflow/
 │   ├── observability/
-│  └── argocd/
+│   └── argocd/
 ├── scripts/            # 🔧 Automation scripts
-├── services/           # 🚀 Custom services
-├── workflows/          # 🔄 Workflow jobs
 └── tests/              # ✅ Tests
 ```
 

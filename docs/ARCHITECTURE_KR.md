@@ -293,11 +293,11 @@ lakehouse/
 │
 ├── scripts/            # 자동화 스크립트
 │   ├── bootstrap.sh        - 전체 배포
-│   ├── cleanup.sh          - 전체 제거
-│   └── validate.sh         - 검증
+│   ├── cleanup.sh          - 플랫폼 제거
+│   └── validate.sh         - 플랫폼 검증
 │
-├── services/           # 커스텀 서비스
-└── workflows/          # 워크플로우 예제
+└── tests/              # 테스트
+    └── e2e/                - E2E 테스트
 ```
 
 ### 4.2 설정 우선순위
