@@ -1,8 +1,9 @@
-# Production Environment - Airflow Configuration
-# Used by ArgoCD Application: platform/argocd/templates/airflow-application.yaml
+# Airflow Production Environment Configuration
+# Platform defaults: platform/airflow/values.yaml
+# Override ONLY environment-specific values
 
 airflow:
-  # Webserver - production resources with HA
+  # Production webserver with HA (3 replicas)
   webserver:
     replicas: 3
     resources:
@@ -13,7 +14,7 @@ airflow:
         memory: 2Gi
         cpu: 1000m
 
-    # Pod anti-affinity for HA
+    # Pod anti-affinity for HA distribution
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -25,7 +26,7 @@ airflow:
                     - webserver
             topologyKey: kubernetes.io/hostname
 
-  # Scheduler - production resources with HA
+  # Production scheduler with HA (3 replicas)
   scheduler:
     replicas: 3
     resources:
@@ -36,7 +37,7 @@ airflow:
         memory: 2Gi
         cpu: 1000m
 
-    # Pod anti-affinity for HA
+    # Pod anti-affinity for HA distribution
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -48,12 +49,11 @@ airflow:
                     - scheduler
             topologyKey: kubernetes.io/hostname
 
-  # PostgreSQL - production resources with HA
+  # PostgreSQL with production resources and read replicas
   postgresql:
     primary:
       persistence:
-        enabled: true
-        size: 100Gi
+        size: 100Gi  # Production storage
       resources:
         requests:
           memory: 2Gi
@@ -76,31 +76,26 @@ airflow:
           memory: 4Gi
           cpu: 2000m
 
-  # DAGs - production persistence with GitSync
+  # GitSync with production branch and SSH authentication
   dags:
-    persistence:
-      enabled: false
-      # size: 10Gi
-
-    # GitSync enabled for production
     gitSync:
       enabled: true
       repo: "https://github.com/your-org/lakehouse-workflows.git"
-      branch: main
+      branch: main  # Production branch
       wait: 30
-      maxFailures: 0
+      maxFailures: 0  # Strict for production
       sshKeySecret: airflow-git-ssh-secret
 
-  # Airflow configuration - production settings
+  # Production Airflow configuration
   config:
     core:
-      parallelism: 128
+      parallelism: 128  # High parallelism for production
       max_active_tasks_per_dag: 32
       max_active_runs_per_dag: 16
       dag_file_processor_timeout: 300
 
     webserver:
-      expose_config: "False"
+      expose_config: "False"  # Security: hide config in production
       rbac: "True"
       authenticate: "True"
       auth_backend: "airflow.api.auth.backend.basic_auth"
@@ -130,18 +125,18 @@ airflow:
       statsd_port: 9125
       statsd_prefix: "airflow"
 
-  # Metrics - enabled for production
+  # Production metrics with high-frequency monitoring
   metrics:
     enabled: true
     serviceMonitor:
       enabled: true
-      interval: 15s
+      interval: 15s  # More frequent for production
       scrapeTimeout: 10s
       labels:
         environment: production
         team: data-platform
 
-  # Ingress - enabled for production with TLS
+  # Production ingress with strict TLS
   ingress:
     enabled: true
     web:
@@ -157,7 +152,7 @@ airflow:
             enabled: true
             secretName: airflow-prod-tls
 
-  # Triggerer - enabled for production with HA
+  # Triggerer with HA (2 replicas) and affinity
   triggerer:
     enabled: true
     replicas: 2
@@ -169,7 +164,7 @@ airflow:
         memory: 1Gi
         cpu: 500m
 
-    # Pod anti-affinity for HA
+    # Soft anti-affinity for better distribution
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -182,3 +177,4 @@ airflow:
                     values:
                       - triggerer
               topologyKey: kubernetes.io/hostname
+

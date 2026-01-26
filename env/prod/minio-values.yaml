@@ -1,36 +1,12 @@
-# MinIO Configuration - Production Environment
+# MinIO Production Environment Configuration
+# Platform defaults: platform/minio/values.yaml
+# Override ONLY environment-specific values
 
-# Deployment mode: distributed for high availability
+# Production requires distributed mode for high availability (SLA: 99.9%)
 mode: distributed
-
-# Number of replicas (minimum 4 for distributed mode)
 replicas: 4
 
-# Persistence configuration
-persistence:
-  enabled: true
-  size: 100Gi
-  storageClass: "fast-ssd"  # Use high-performance storage class
-
-# Resource allocation (production-grade)
-resources:
-  requests:
-    memory: 2Gi
-    cpu: 1000m
-  limits:
-    memory: 4Gi
-    cpu: 2000m
-
-# Service configuration
-service:
-  type: ClusterIP
-  port: 9000
-  consolePort: 9001
-
-# Use SealedSecret for credentials
-existingSecret: "minio-creds"
-
-# Buckets to create automatically
+# Production-specific bucket naming (includes archive bucket)
 buckets:
   - name: lakehouse-prod-raw
     policy: none
@@ -45,19 +21,26 @@ buckets:
     policy: none
     purge: false
 
-# Security context
-securityContext:
-  enabled: true
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
+# Large storage with high-performance storage class (I/O requirement: 10K IOPS)
+persistence:
+  size: 100Gi
+  storageClass: "fast-ssd"
 
-# TLS configuration (enabled for production)
+# Production-grade resources for high throughput
+resources:
+  requests:
+    memory: 2Gi
+    cpu: 1000m
+  limits:
+    memory: 4Gi
+    cpu: 2000m
+
+# TLS enabled for production security
 tls:
   enabled: true
   certSecret: minio-tls-cert
 
-# Ingress configuration
+# Ingress with automatic TLS certificate management
 ingress:
   enabled: true
   annotations:
@@ -73,14 +56,14 @@ ingress:
       hosts:
         - minio.lakehouse.example.com
 
-# Metrics (enabled for production monitoring)
+# Production metrics with custom scrape intervals
 metrics:
   serviceMonitor:
     enabled: true
     interval: 30s
     scrapeTimeout: 10s
 
-# Console ingress
+# Console ingress for web UI access
 consoleIngress:
   enabled: true
   annotations:
@@ -93,7 +76,7 @@ consoleIngress:
       hosts:
         - minio-console.lakehouse.example.com
 
-# Affinity rules (spread pods across nodes)
+# Pod anti-affinity for HA (spread replicas across different nodes)
 affinity:
   podAntiAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
@@ -104,14 +87,3 @@ affinity:
               values:
                 - minio
         topologyKey: kubernetes.io/hostname
-
-# Node selector (optional - use dedicated storage nodes)
-nodeSelector: {}
-  # storage: "true"
-
-# Tolerations (optional)
-tolerations: []
-
-# Priority class (optional - ensure MinIO pods are scheduled first)
-priorityClassName: ""
-  # high-priority

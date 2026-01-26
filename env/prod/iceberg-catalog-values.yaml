@@ -1,6 +1,12 @@
-image:
-  repository: tabulario/iceberg-rest
-  tag: "1.6.0"
+# Iceberg Catalog Production Environment Configuration
+# Platform defaults: platform/iceberg-catalog/values.yaml
+# Override ONLY environment-specific values
+
+# Production-specific warehouse bucket (matches MinIO prod bucket)
+catalog:
+  warehouse: s3://lakehouse-prod-warehouse/
+
+# Production-grade resources for high throughput
 resources:
   requests:
     memory: 2Gi
@@ -9,8 +15,3 @@ resources:
     memory: 4Gi
     cpu: 2000m
 
-catalog:
-  warehouse: s3://lakehouse-prod-warehouse/
-  s3:
-    endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
-    existingSecret: "minio-creds"

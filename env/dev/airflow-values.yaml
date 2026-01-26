@@ -1,53 +1,45 @@
-# Development Environment - Airflow Configuration
-# Used by ArgoCD Application: platform/argocd/templates/airflow-application.yaml
+# Airflow Development Environment Configuration
+# Platform defaults: platform/airflow/values.yaml
+# Override ONLY environment-specific values
 
 airflow:
-  # Webserver - minimal resources for development
-  # Note: Airflow webserver requires at least 1Gi to avoid OOMKilled
+  # Dev webserver with minimal resources
+  # Note: At least 512Mi required to avoid OOMKilled
   webserver:
-    replicas: 1
     resources:
       requests:
         memory: 512Mi
-        cpu: 100m
+        cpu: 100m  # Lower than platform default (250m)
       limits:
         memory: 1Gi
-        cpu: 250m
+        cpu: 250m  # Lower than platform default (500m)
 
-  # Scheduler - increased resources for Airflow 3.0
-  # Note: Airflow 3.0 requires more memory, 2Gi to avoid OOMKilled
+  # Dev scheduler with increased memory for Airflow 3.0
+  # Note: Airflow 3.0 requires 2Gi to avoid OOMKilled
   scheduler:
-    replicas: 1
     resources:
       requests:
-        memory: 1Gi
+        memory: 1Gi  # Higher than platform default (512Mi)
         cpu: 250m
       limits:
-        memory: 2Gi
+        memory: 2Gi  # Higher than platform default (1Gi)
         cpu: 500m
 
-  # PostgreSQL - minimal resources for development
+  # PostgreSQL with minimal resources for development
   postgresql:
     primary:
       persistence:
-        enabled: true
-        size: 2Gi
+        size: 2Gi  # Minimal for dev
       resources:
         requests:
-          memory: 256Mi
-          cpu: 100m
+          memory: 256Mi  # Lower than platform default
+          cpu: 100m  # Lower than platform default
         limits:
-          memory: 512Mi
-          cpu: 250m
+          memory: 512Mi  # Lower than platform default
+          cpu: 250m  # Lower than platform default
 
-  # DAGs - minimal persistence with GitSync
+  # GitSync configuration for DAG deployment
   dags:
-    mountPath: "/opt/airflow/dags"
-    persistence:
-      enabled: false
-      # size: 1Gi
-
-    # GitSync configuration for DAG deployment
     gitSync:
       enabled: true
       repo: https://github.com/SeoHyungjun/lakehouse-dags.git
@@ -57,19 +49,19 @@ airflow:
       maxFailures: 0
       credentialsSecret: git-sync-cred
 
-  # Airflow configuration - development settings
+  # Development-specific Airflow configuration
   config:
     core:
       dags_folder: "/opt/airflow/dags/repo/dags"
       load_connections: "True"
-      parallelism: 8
-      max_active_tasks_per_dag: 4
-      max_active_runs_per_dag: 4
+      parallelism: 8  # Lower than platform default (32)
+      max_active_tasks_per_dag: 4  # Lower than platform default (16)
+      max_active_runs_per_dag: 4  # Lower than platform default (16)
 
     webserver:
       expose_config: "True"
-      rbac: "False"
-      authenticate: "False"
+      rbac: "False"  # Disabled for dev (platform: True)
+      authenticate: "False"  # Disabled for dev (platform: True)
       base_url: "http://airflow-api-server.lakehouse-platform.svc.cluster.local:8080"
 
     kubernetes:
@@ -80,7 +72,7 @@ airflow:
       enabled: false
 
     logging:
-      logging_level: "DEBUG"
+      logging_level: "DEBUG"  # More verbose for dev (platform: INFO)
       remote_logging: "True"
       remote_base_log_folder: "s3://lakehouse-dev-raw/airflow-logs/"
       remote_logging_conn_id: "aws_default"
@@ -90,6 +82,7 @@ airflow:
     celery:
       s3_conn_id: aws_default
 
-  # Triggerer - disabled for development
+  # Triggerer disabled for development (saves resources)
   triggerer:
     enabled: false
+

@@ -1,268 +1,213 @@
-# Lakehouse Project – Architecture & Engineering Principles
+# Lakehouse Platform
+
+> Modern data lakehouse platform - Kubernetes-native, vendor-neutral, production-ready
 
 **English** | [한국어](README_KR.md)
 
+---
 
-## 1. Project Scope
+## Overview
 
-This project defines a **Lakehouse architecture** that is:
+A modern data lakehouse platform combining the best of **data lakes** and **data warehouses**, built on Apache Iceberg, Trino, and MinIO, designed to run on Kubernetes.
 
-* Kubernetes-based
-* Open-source first
-* Reproducible via Git
-* Modular and easily replaceable
-* Deployable across container, cloud, and physical environments
+### Why Lakehouse?
 
-The goal is **long-term maintainability and portability**, not short-term convenience.
+- 🏢 **Warehouse Performance**: Fast analytics with SQL queries
+- 💰 **Lake Economics**: Cost-effective object storage
+- 🔒 **ACID Transactions**: Data integrity with Apache Iceberg
+- 🔄 **Time Travel**: Query historical data snapshots
+- 🚀 **Scalability**: Kubernetes-based infinite scaling
 
 ---
 
-## 2. Core Architectural Principles
+## Quick Start
 
-### 2.1 Kubernetes as Orchestration Layer
+```bash
+# 1. Clone repository
+git clone https://github.com/SeoHyungjun/lakehouse.git
+cd lakehouse
 
-* Kubernetes is used as the **central orchestration and control plane**
-* Kubernetes is **not** treated as a data store or business logic layer
-* Not all modules must run inside Kubernetes Pods
+# 2. Deploy development environment
+./scripts/bootstrap.sh dev
 
----
+# 3. Access services
+kubectl port-forward -n lakehouse-platform svc/trino 8080:8080 &
+kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 &
 
-### 2.2 Execution Location Is an Implementation Detail
-
-Each module may run as:
-
-* A Kubernetes Pod
-* An external service (VM or bare-metal)
-* A managed cloud service
-
-**Execution location must never affect how other modules interact with it.**
-
----
-
-### 2.3 Contract-First Module Design
-
-All modules must expose a **stable contract**, independent of implementation:
-
-* REST / gRPC API
-* SQL endpoint
-* S3-compatible object interface
-
-Other modules must depend **only on the contract**, never on:
-
-* Physical device
-* Container runtime
-* Deployment method
-
----
-
-## 3. Networking & Configuration Rules
-
-### 3.1 No IP Address Hardcoding
-
-* IP addresses must **never** appear in configuration files
-* All inter-module communication must use:
-
-  * DNS-based endpoints
-  * Protocol + Port + Authentication info
-
-Example:
-
-```yaml
-object_storage:
-  endpoint: http://minio.storage.svc.cluster.local:9000
+# 4. Run your first query
+trino --server localhost:8080 --catalog iceberg --schema default
 ```
 
-External services must follow the same rule:
+**See detailed guide**: [Getting Started](docs/GETTING_STARTED_KR.md) (Korean)
 
-```yaml
-query_engine:
-  endpoint: https://trino.company.internal
+---
+
+## Core Components
+
+| Component | Role | Technology |
+|-----------|------|------------|
+| **Object Storage** | Data file storage | MinIO (S3-compatible) |
+| **Metadata Management** | Table schema & metadata | Apache Iceberg REST Catalog |
+| **Query Engine** | SQL query execution | Trino |
+| **Workflow** | Pipeline scheduling | Apache Airflow |
+| **Monitoring** | Metrics & visualization | Prometheus + Grafana |
+| **GitOps** | Deployment automation | ArgoCD |
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│      Users / Applications               │
+└──────────────┬──────────────────────────┘
+               │
+    ┌──────────┴──────────┐
+    │                     │
+┌───▼────┐          ┌────▼────┐
+│ Trino  │◄─────────┤ Airflow │
+│(Query) │   SQL    │(Workflow)│
+└─┬───┬──┘          └─────────┘
+  │   │
+  │   │  ① Metadata
+  │   └──┤ Iceberg Catalog│
+  │      │  (Metadata)    │
+  │      └───────┬────────┘
+  │              │ ③ Metadata files
+  │      ┌───────▼────────┐
+  └──────┤     MinIO      │ ② Data files
+         │ (Data Storage) │
+         └────────────────┘
+
+① Trino queries Iceberg Catalog for table metadata
+② Trino reads/writes data files directly from/to MinIO  
+③ Iceberg Catalog stores metadata files in MinIO
+④ Airflow sends SQL queries to Trino only
+```
+      │ (Data Storage) │
+      └────────────────┘
 ```
 
 ---
 
-### 3.2 Configuration vs Code Separation
+## Project Structure
 
-* **Code is immutable**
-* **Configuration is environment-specific**
-
-Rules:
-
-* No environment-specific logic in code
-* No credentials committed to Git
-* Configuration must be injectable via:
-
-  * Helm values
-  * Environment variables
-  * External config providers
-
----
-
-## 4. Data & Storage Architecture
-
-### 4.1 Object Storage
-
-* Default object storage: **MinIO**
-* All object storage access must use **S3-compatible APIs only**
-* No vendor-specific SDKs (AWS, Azure, GCP) are allowed in application code
-
-This ensures easy migration to:
-
-* Amazon S3
-* Azure Blob Storage (S3-compatible layer)
-* Other compatible object stores
-
----
-
-### 4.2 Table Format
-
-* **Apache Iceberg** is the canonical table format
-* Iceberg is treated as the single source of truth for analytical tables
-
-#### Iceberg Catalog
-
-The catalog backend must be replaceable:
-
-* REST catalog
-* JDBC catalog
-* Hive Metastore
-* Cloud-managed catalogs (e.g., AWS Glue)
-
-Catalog choice must be configuration-only.
-
----
-
-### 4.3 Query Engine
-
-* **Trino** is used as the query engine
-* Trino accesses data **only through Iceberg**
-* No direct access to raw object paths outside Iceberg metadata
-
----
-
-## 5. Workflow Orchestration
-
-### 5.1 Orchestrator Choice
-
-* Default orchestrator: **Airflow**
-* Alternative supported: **Dagster**
-
-The system must allow switching orchestrators **without rewriting core jobs**.
-
----
-
-### 5.2 Orchestrator Abstraction
-
-Workflows must be defined using a **Job Specification**, not orchestrator-specific APIs.
-
-Example:
-
-```yaml
-job:
-  name: daily_ingest
-  image: lakehouse/ingest:1.0
-  params:
-    execution_date: "{{ ds }}"
+```
+lakehouse/
+├── contracts/          # 📋 Component interface contracts (API specs)
+├── docs/               # 📚 Documentation
+├── env/                # ⚙️  Environment-specific configurations
+│   ├── dev/
+│   ├── staging/
+│   └── prod/
+├── infra/              # 🏗️  Infrastructure code (Terraform)
+├── platform/           # 🎯 Platform components (Helm charts)
+│   ├── minio/
+│   ├── iceberg-catalog/
+│   ├── trino/
+│   ├── airflow/
+│   ├── observability/
+│  └── argocd/
+├── scripts/            # 🔧 Automation scripts
+├── services/           # 🚀 Custom services
+├── workflows/          # 🔄 Workflow jobs
+└── tests/              # ✅ Tests
 ```
 
-Rules:
+---
 
-* Orchestrator only triggers jobs
-* Business logic lives inside containerized jobs
-* No direct dependency on Airflow/Dagster internals
+## Documentation
+
+### Core Documents
+- **[Documentation Guide](docs/README.md)** - Documentation structure
+- **[Getting Started](docs/GETTING_STARTED_KR.md)** - Quick start guide (Korean)
+- **[Architecture](docs/ARCHITECTURE_KR.md)** - System design (Korean)
+- **[Runbook](docs/runbook.md)** - Operations guide
+
+### Contracts
+- **[Contracts Overview](contracts/README.md)** - Contract system
+- **[Repository Contract](contracts/repository-contract.md)** - Directory structure rules
+- **[Kubernetes Cluster](contracts/kubernetes-cluster.md)** - Cluster requirements
+- **[Object Storage](contracts/object-storage.md)** - S3 API interface
+- **[Iceberg Catalog](contracts/iceberg-catalog.md)** - Catalog REST API
+- **[Query Engine](contracts/query-engine.md)** - Trino SQL interface
+- **[Service Module](contracts/service-module.md)** - Service standards
+- **[Workflow Orchestration](contracts/workflow-orchestration.md)** - Orchestration spec
 
 ---
 
-## 6. Infrastructure & Deployment
+## Deployment
 
-### 6.1 Infrastructure as Code
+### Development
+```bash
+./scripts/bootstrap.sh dev
+# Single node, minimal resources, local Kind cluster
+```
 
-| Tool                   | Responsibility                                       |
-| ---------------------- | ---------------------------------------------------- |
-| Terraform              | Provision infrastructure (cluster, network, storage) |
-| Helm                   | Package and configure applications                   |
-| GitOps (ArgoCD / Flux) | Reconcile desired state                              |
+### Staging
+```bash
+./scripts/bootstrap.sh staging
+# 3 nodes (HA), moderate resources, external access
+```
 
-Manual deployment is discouraged.
-
----
-
-### 6.2 GitOps-First
-
-* Git is the **single source of truth**
-* A fresh environment must be bootstrappable from Git alone
-* Drift between Git and runtime state is not allowed
-
----
-
-## 7. Container & Bare-Metal Compatibility
-
-* Containers are the default execution unit
-* All services must be runnable as:
-
-  * Containers
-  * Standalone binaries (systemd / bare-metal)
-
-Rules:
-
-* No container-only assumptions (e.g., hardcoded paths)
-* Startup and configuration must be environment-agnostic
+### Production
+```bash
+./scripts/bootstrap.sh prod
+# 5+ nodes (HA), maximum resources, TLS/OAuth2, strict security
+```
 
 ---
 
-## 8. Observability (Mandatory)
+## Core Principles
 
-All modules must provide:
-
-* Structured logging (stdout)
-* Metrics (Prometheus-compatible)
-* Health checks (liveness / readiness)
-
-Observability is **not optional**.
-
----
-
-## 9. Security & Secrets
-
-* Secrets must never be committed to Git
-* Secrets must be managed via:
-
-  * Kubernetes Secrets
-  * External Secrets Manager
-* All network communication must be authenticated
-
----
-
-## 10. Reproducibility Guarantee
-
-This project must satisfy the following:
-
-* A new environment can be created with:
-
-  ```bash
-  git clone
-  terraform apply
-  argocd sync
-  ```
-* No undocumented manual steps
-* Same Git commit → same system behavior
-
----
-
-## 11. Non-Goals
-
-This project explicitly does **not** aim to:
-
-* Optimize for single-node performance
-* Hardcode infrastructure assumptions
-* Tie itself to a specific cloud provider
-
----
-
-# Guiding Principle (TL;DR)
-
-> **Everything is replaceable.
-> Nothing is hardcoded.
+> **Everything is replaceable.  
+> Nothing is hardcoded.  
 > Git defines reality.**
 
+### 1. Contract-First Design
+All modules expose stable contracts, independent of implementation.
+
+### 2. No IP Hardcoding
+All inter-module communication uses DNS-based endpoints.
+
+### 3. Configuration vs Code
+- Code is immutable
+- Configuration is environment-specific and injectable
+
+### 4. GitOps-First
+Git is the single source of truth. Any environment should be reproducible from Git alone.
+
+### 5. Observability Mandatory
+All modules must provide:
+- Structured logging (stdout)
+- Metrics (Prometheus-compatible)
+- Health checks (liveness/readiness)
+
+**See full principles**: [Architecture Document](README.md)
+
 ---
+
+## License
+
+Apache 2.0 License - See [LICENSE](LICENSE) file for details
+
+---
+
+## Acknowledgments
+
+Built on these amazing open-source projects:
+- [Apache Iceberg](https://iceberg.apache.org/)
+- [Trino](https://trino.io/)
+- [MinIO](https://min.io/)
+- [Apache Airflow](https://airflow.apache.org/)
+- [Prometheus](https://prometheus.io/) / [Grafana](https://grafana.com/)
+- [ArgoCD](https://argoproj.github.io/cd/)
+
+---
+
+**Happy Data Engineering! 🚀**
+</ Made with ❤️ by the Lakehouse Team
+
+[⬆ Back to top](#lakehouse-platform)
+
+</div>

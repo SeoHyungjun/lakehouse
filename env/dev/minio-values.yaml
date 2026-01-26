@@ -1,27 +1,25 @@
-minio:
-  mode: standalone
-  replicas: 1
-  # Use SealedSecret for credentials
-  existingSecret: "minio-creds"
+# MinIO Development Environment Configuration
+# Platform defaults: platform/minio/values.yaml
+# Override ONLY environment-specific values
 
-  # Buckets to create
-  buckets:
-    - name: lakehouse-dev-raw
-      policy: none
-      purge: false
-    - name: lakehouse-dev-warehouse
-      policy: none
-      purge: false
-    - name: lakehouse-dev-temp
-      policy: none
-      purge: false
+# Dev-specific bucket naming (environment-prefixed for isolation)
+buckets:
+  - name: lakehouse-dev-raw
+    policy: none
+    purge: false
+  - name: lakehouse-dev-warehouse
+    policy: none
+    purge: false
+  - name: lakehouse-dev-temp
+    policy: none
+    purge: false
 
-  # Environment variables
-  environment:
-    MINIO_BROWSER_REDIRECT_URL: "http://127.0.0.1:9001"
-  persistence:
-    size: 10Gi
-  resources:
-    requests:
-      memory: 256Mi
-      cpu: 100m
+# Dev-specific browser redirect for local port-forwarding
+environment:
+  MINIO_BROWSER_REDIRECT_URL: "http://127.0.0.1:9001"
+
+# Minimal resources for local development (cost optimization)
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 100m

@@ -1,36 +1,8 @@
-# MinIO Configuration - Staging Environment
+# MinIO Staging Environment Configuration
+# Platform defaults: platform/minio/values.yaml
+# Override ONLY environment-specific values
 
-# Deployment mode: standalone (can be upgraded to distributed)
-mode: standalone
-
-# Number of replicas
-replicas: 1
-
-# Persistence configuration
-persistence:
-  enabled: true
-  size: 50Gi
-  storageClass: ""  # Use cluster default or specify: "fast-ssd"
-
-# Resource allocation (moderate for staging)
-resources:
-  requests:
-    memory: 1Gi
-    cpu: 500m
-  limits:
-    memory: 2Gi
-    cpu: 1000m
-
-# Service configuration
-service:
-  type: ClusterIP
-  port: 9000
-  consolePort: 9001
-
-# Use SealedSecret for credentials
-existingSecret: "minio-creds"
-
-# Buckets to create automatically
+# Staging-specific bucket naming (environment-prefixed)
 buckets:
   - name: lakehouse-staging-raw
     policy: none
@@ -42,27 +14,21 @@ buckets:
     policy: none
     purge: false
 
-# Security context
-securityContext:
-  enabled: true
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
+# Staging storage size (larger than dev, production-like testing)
+persistence:
+  size: 50Gi
 
-# Ingress (can be enabled if needed)
-ingress:
-  enabled: false
-  annotations:
-    kubernetes.io/ingress.class: nginx
-  hosts:
-    - minio-staging.example.com
-  tls: []
+# Moderate resources for staging (production-like without full cost)
+resources:
+  requests:
+    memory: 1Gi
+    cpu: 500m
+  limits:
+    memory: 2Gi
+    cpu: 1000m
 
-# Metrics (enabled for staging)
+# Enable metrics for staging observability
 metrics:
   serviceMonitor:
     enabled: true
 
-# Console ingress (optional)
-consoleIngress:
-  enabled: false

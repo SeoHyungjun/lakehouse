@@ -12,10 +12,8 @@
 - [주요 특징](#주요-특징)
 - [빠른 시작](#빠른-시작)
 - [아키텍처](#아키텍처)
-- [문서](#문서)
 - [프로젝트 구조](#프로젝트-구조)
-- [기여하기](#기여하기)
-- [라이선스](#라이선스)
+- [문서](#문서)
 
 ---
 
@@ -53,8 +51,6 @@ Lakehouse는 **데이터 레이크**와 **데이터 웨어하우스**의 장점�
 - ✅ **고가용성(HA)**: 프로덕션 환경에서 무중단 운영
 - ✅ **벤더 중립적**: 특정 클라우드에 종속되지 않음
 - ✅ **완벽한 관찰성**: 모든 컴포넌트의 메트릭 및 로그 수집
-- ✅ **보안**: TLS, OAuth2, RBAC 지원
-- ✅ **테스트 완료**: E2E 테스트로 검증된 안정성
 
 ---
 
@@ -62,34 +58,29 @@ Lakehouse는 **데이터 레이크**와 **데이터 웨어하우스**의 장점�
 
 ### 사전 요구사항
 
-다음 도구들이 설치되어 있어야 합니다:
-
 ```bash
 # macOS
 brew install kubectl helm terraform kind
 
-# Linux
-# kubectl, helm, terraform, kind 설치
-# 자세한 내용은 docs/GETTING_STARTED_KR.md 참조
+# Linux - 자세한 내용은 docs/GETTING_STARTED_KR.md 참조
 ```
 
 ### 5분 안에 시작하기
 
 ```bash
 # 1. 저장소 클론
-git clone https://github.com/your-org/lakehouse.git
+git clone https://github.com/SeoHyungjun/lakehouse.git
 cd lakehouse
 
 # 2. 개발 환경 배포
 ./scripts/bootstrap.sh dev
 
 # 3. 서비스 접속
-kubectl port-forward -n lakehouse-platform svc/trino 31280:8080 &
-kubectl port-forward -n lakehouse-platform svc/minio 31100:9000 &
-kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80 &
+kubectl port-forward -n lakehouse-platform svc/trino 8080:8080 &
+kubectl port-forward -n lakehouse-platform svc/minio 9000:9000 &
 
 # 4. 첫 번째 쿼리 실행
-trino --server localhost:31280 --catalog iceberg --schema default
+trino --server localhost:8080 --catalog iceberg --schema default
 ```
 
 **축하합니다! 🎉** Lakehouse 플랫폼이 실행 중입니다.
@@ -110,30 +101,102 @@ trino --server localhost:31280 --catalog iceberg --schema default
          ┌───────────┴───────────┐
          │                       │
     ┌────▼─────┐          ┌─────▼────┐
-    │  Trino   │          │ Airflow  │
-    │ (쿼리)    │          │(워크플로우)│
-    └────┬─────┘          └─────┬────┘
-         │                      │
-         └──────────┬───────────┘
-                    │
-            ┌───────▼────────┐
-            │ Iceberg Catalog│
-            │  (메타데이터)   │
-            └───────┬────────┘
-                    │
-            ┌───────▼────────┐
-            │     MinIO      │
-            │  (데이터 저장)  │
-            └────────────────┘
+    │  Trino   │◄─────────┤ Airflow  │
+    │ (쿼리)    │  SQL     │(워크플로우)│
+    └──┬───┬───┘          └──────────┘
+       │   │
+       │   │  ① 메타데이터 조회
+       │   └──┤ Iceberg Catalog│
+       │      │  (메타데이터)   │
+       │      └────────┬───────┘
+       │               │ ③ 메타데이터 저장
+       │      ┌────────▼────────┐
+       └──────┤     MinIO       │ ② 데이터 읽기/쓰기
+              │  (데이터 저장)   │
+              └─────────────────┘
 ```
 
 ### 데이터 흐름
 
-1. **데이터 저장**: 사용자 → Trino → Iceberg Catalog → MinIO
-2. **데이터 조회**: SQL 쿼리 → Trino → Iceberg Catalog → MinIO
-3. **워크플로우**: Airflow → Kubernetes Job → Trino/MinIO
+1. **SQL 쿼리 실행**: 
+   - 사용자/Airflow → Trino (SQL 쿼리)
+   - Trino → Iceberg Catalog (메타데이터 조회)
+   - Trino → MinIO (데이터 파일 읽기/쓰기)
+
+2. **메타데이터 관리**:
+   - Iceberg Catalog → MinIO (메타데이터 파일 저장)
+
+3. **워크플로우**:
+   - Airflow → Trino (SQL만 사용, 직접 Iceberg 접근 안 함)
 
 자세한 아키텍처는 **[아키텍처 가이드](docs/ARCHITECTURE_KR.md)**를 참조하세요.
+
+---
+
+## 프로젝트 구조
+
+```
+lakehouse/
+├── contracts/              # 📋 컴포넌트 인터페이스 계약 (API 스펙)
+│   ├── README.md                # 계약서 설명
+│   ├── repository-contract.md   # 저장소 구조 규칙
+│   ├── kubernetes-cluster.md    # K8s 클러스터 요구사항
+│   ├── object-storage.md        # S3 API 계약
+│   ├── iceberg-catalog.md       # Iceberg REST 계약
+│   ├── query-engine.md          # Trino SQL 계약
+│   ├── service-module.md        # 서비스 표준 계약
+│   └── workflow-orchestration.md # 워크플로우 계약
+│
+├── docs/                   # 📚 사용자 문서
+│   ├── README.md                # 문서 네비게이션
+│   ├── INDEX_KR.md              # 문서 인덱스
+│   ├── GETTING_STARTED_KR.md    # 시작 가이드
+│   ├── ARCHITECTURE_KR.md       # 아키텍처 가이드
+│   ├── runbook.md               # 운영 가이드
+│   ├── SECRET_MANAGEMENT_KR.md  # 시크릿 관리
+│   └── AIRFLOW_DAG_ENV_KR.md    # Airflow DAG 개발
+│
+├── env/                    # ⚙️  환경별 설정 파일
+│   ├── dev/                     # 개발 환경
+│   │   ├── terraform.tfvars
+│   │   ├── minio-values.yaml
+│   │   ├── iceberg-catalog-values.yaml
+│   │   ├── trino-values.yaml
+│   │   └── airflow-values.yaml
+│   ├── staging/                 # 스테이징 환경
+│   └── prod/                    # 프로덕션 환경
+│
+├── infra/                  # 🏗️  인프라 코드 (Terraform)
+│   ├── main.tf
+│   ├── variables.tf
+│   └── modules/
+│       ├── cluster/
+│       ├── network/
+│       └── storage/
+│
+├── platform/               # 🎯 플랫폼 컴포넌트 (Helm 차트)
+│   ├── README.md
+│   ├── minio/                   # MinIO (S3 스토리지)
+│   ├── iceberg-catalog/         # Iceberg Catalog
+│   ├── trino/                   # Trino (쿼리 엔진)
+│   ├── airflow/                 # Airflow (워크플로우)
+│   ├── observability/           # Prometheus + Grafana
+│   └── argocd/                  # ArgoCD (GitOps)
+│
+├── scripts/                # 🔧 자동화 스크립트
+│   ├── bootstrap.sh             # 전체 플랫폼 배포
+│   ├── cleanup.sh               # 플랫폼 제거
+│   └── validate.sh              # 플랫폼 검증
+│
+├── services/               # 🚀 커스텀 서비스 예제
+│   └── sample-service/
+│
+├── workflows/              # 🔄 워크플로우 예제
+│   └── sample-job/
+│
+└── tests/                  # ✅ 테스트
+    └── e2e/
+```
 
 ---
 
@@ -143,426 +206,93 @@ trino --server localhost:31280 --catalog iceberg --schema default
 
 | 문서 | 설명 |
 |------|------|
-| **[시작 가이드](docs/GETTING_STARTED_KR.md)** | 처음 사용자를 위한 완벽 가이드 (필독!) |
-| **[아키텍처 가이드](docs/ARCHITECTURE_KR.md)** | 시스템 아키텍처 및 데이터 흐름 |
-| **[운영 가이드](docs/runbook.md)** | 배포, 업그레이드, 롤백, 문제 해결 |
-| **[DoD 보고서](docs/dod-report.md)** | 모든 모듈의 완료 기준 검증 |
+| **[문서 가이드](docs/README.md)** | 문서 구조 및 네비게이션 |
+| **[시작 가이드](docs/GETTING_STARTED_KR.md)** | 처음 사용자를 위한 완벽 가이드 |
+| **[아키텍처 가이드](docs/ARCHITECTURE_KR.md)** | 시스템 아키텍처 및 설계 |
+| **[운영 가이드](docs/runbook.md)** | 배포, 업그레이드, 문제 해결 |
+| **[시크릿 관리](docs/SECRET_MANAGEMENT_KR.md)** | 보안 및 인증 설정 |
+| **[Airflow 가이드](docs/AIRFLOW_DAG_ENV_KR.md)** | DAG 개발 가이드 |
 
 ### 📋 계약서 (Contracts)
 
 모든 컴포넌트는 명확한 인터페이스 계약을 따릅니다:
 
-- [Kubernetes 클러스터](contracts/kubernetes-cluster.md)
-- [객체 스토리지 (S3)](contracts/object-storage.md)
-- [Iceberg 카탈로그](contracts/iceberg-catalog.md)
-- [쿼리 엔진](contracts/query-engine.md)
-- [서비스 모듈](contracts/service-module.md)
-- [워크플로우 오케스트레이션](contracts/workflow-orchestration.md)
-
----
-
-## 프로젝트 구조
-
-```
-lakehouse/
-├── contracts/              # 📋 컴포넌트 인터페이스 정의
-├── docs/                   # 📚 문서
-│   ├── GETTING_STARTED_KR.md    # 시작 가이드 (한글)
-│   ├── ARCHITECTURE_KR.md       # 아키텍처 가이드 (한글)
-│   ├── runbook.md               # 운영 가이드
-│   └── dod-report.md            # DoD 검증 보고서
-├── env/                    # ⚙️  환경별 설정 파일
-│   ├── dev/                     # 개발 환경
-│   ├── staging/                 # 스테이징 환경
-│   └── prod/                    # 프로덕션 환경
-├── infra/                  # 🏗️  인프라 코드 (Terraform)
-├── platform/               # 🎯 플랫폼 컴포넌트 (Helm 차트)
-│   ├── minio/                   # MinIO
-│   ├── iceberg-catalog/         # Iceberg Catalog
-│   ├── trino/                   # Trino
-│   ├── airflow/                 # Airflow
-│   ├── observability/           # Prometheus + Grafana
-│   └── argocd/                  # ArgoCD
-├── scripts/                # 🔧 자동화 스크립트
-│   ├── bootstrap.sh             # 전체 플랫폼 배포
-│   ├── cleanup.sh               # 플랫폼 제거
-│   └── validate.sh              # 플랫폼 검증
-├── services/               # 🚀 샘플 서비스
-│   └── sample-service/          # REST API 샘플
-├── tests/                  # ✅ 테스트 코드
-│   ├── e2e/                     # E2E 테스트
-│   └── compatibility/           # 호환성 테스트
-└── workflows/              # 🔄 샘플 워크플로우
-    └── sample-job/              # 데이터 파이프라인 샘플
-```
-
----
-
-## 사용 예시
-
-### 테이블 생성 및 데이터 삽입
-
-```sql
--- Trino 접속
-trino --server localhost:8080 --catalog iceberg --schema default
-
--- 스키마 생성
-CREATE SCHEMA sales;
-
--- 테이블 생성
-CREATE TABLE sales.orders (
-  order_id BIGINT,
-  customer_id BIGINT,
-  order_date DATE,
-  amount DECIMAL(10, 2)
-)
-WITH (
-  format = 'PARQUET',
-  partitioning = ARRAY['order_date']
-);
-
--- 데이터 삽입
-INSERT INTO sales.orders VALUES
-  (1, 100, DATE '2024-01-01', 1500.00),
-  (2, 101, DATE '2024-01-02', 2500.00);
-
--- 조회
-SELECT * FROM sales.orders;
-
--- Time Travel (과거 시점 조회)
-SELECT * FROM sales.orders FOR TIMESTAMP AS OF TIMESTAMP '2024-01-01 12:00:00';
-```
-
-### Airflow DAG 예시
-
-```python
-# workflows/sample-job/airflow/dag.py
-from airflow import DAG
-from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
-from datetime import datetime
-
-with DAG(
-    'daily_sales_pipeline',
-    start_date=datetime(2024, 1, 1),
-    schedule_interval='@daily',
-    catchup=False
-) as dag:
-    
-    ingest_task = KubernetesPodOperator(
-        task_id='ingest_sales_data',
-        name='ingest-sales',
-        namespace='lakehouse-platform',
-        image='lakehouse/ingest-job:1.0',
-        cmds=['python', 'ingest.py'],
-        arguments=['--date', '{{ ds }}']
-    )
-```
+| 계약서 | 설명 |
+|--------|------|
+| **[계약서 개요](contracts/README.md)** | 계약서 시스템 설명 |
+| **[저장소 구조](contracts/repository-contract.md)** | 디렉토리 구조 및 책임 |
+| **[Kubernetes 클러스터](contracts/kubernetes-cluster.md)** | 클러스터 요구사항 |
+| **[객체 스토리지](contracts/object-storage.md)** | S3 API 인터페이스 |
+| **[Iceberg Catalog](contracts/iceberg-catalog.md)** | 카탈로그 REST API |
+| **[쿼리 엔진](contracts/query-engine.md)** | Trino SQL 인터페이스 |
+| **[서비스 모듈](contracts/service-module.md)** | 서비스 표준 규격 |
+| **[워크플로우](contracts/workflow-orchestration.md)** | 오케스트레이션 규격 |
 
 ---
 
 ## 환경별 배포
 
 ### 개발 환경
-
 ```bash
-# 로컬 Kind 클러스터에 배포
 ./scripts/bootstrap.sh dev
-
-# 특징:
-# - 단일 노드
-# - 최소 리소스
-# - 간단한 인증
+# - 단일 노드, 최소 리소스
+# - 로컬 Kind 클러스터
 ```
 
 ### 스테이징 환경
-
 ```bash
-# 스테이징 클러스터에 배포
 ./scripts/bootstrap.sh staging
-
-# 특징:
 # - 3개 노드 (HA)
 # - 중간 리소스
-# - 외부 접속 (Ingress)
-# - 자동 스케일링
+# - 외부 접속 활성화
 ```
 
 ### 프로덕션 환경
-
 ```bash
-# 프로덕션 클러스터에 배포
 ./scripts/bootstrap.sh prod
-
-# 특징:
 # - 5+ 노드 (고가용성)
 # - 최대 리소스
 # - TLS/OAuth2 인증
 # - 엄격한 보안 정책
-# - 알림 및 모니터링
 ```
 
 ---
 
-## 커스터마이징
+## 핵심 원칙
 
-### 리소스 조정
+> **Everything is replaceable.  
+> Nothing is hardcoded.  
+> Git defines reality.**
 
-```yaml
-# env/prod/helm-values.yaml
-trino:
-  server:
-    workers: 10  # 워커 수 증가
-  worker:
-    resources:
-      requests:
-        memory: 16Gi  # 메모리 증가
-        cpu: 8000m
-```
+1. **모듈화**: 모든 컴포넌트는 교체 가능
+2. **계약 준수**: 명확한 인터페이스 계약
+3. **환경 독립적**: 개발/스테이징/프로덕션 동일한 코드
+4. **GitOps**: Git이 유일한 진실의 원천
+5. **관찰성**: 모든 컴포넌트 메트릭/로그/헬스체크 필수
 
-### 새 카탈로그 추가
-
-```yaml
-# env/prod/helm-values.yaml
-trino:
-  additionalCatalogs:
-    # PostgreSQL 카탈로그 추가
-    postgresql: |
-      connector.name=postgresql
-      connection-url=jdbc:postgresql://postgres:5432/mydb
-      connection-user=user
-      connection-password=password
-```
-
-### 인증 활성화
-
-```yaml
-# env/prod/helm-values.yaml
-trino:
-  auth:
-    enabled: true
-    type: oauth2
-  tls:
-    enabled: true
-```
-
-자세한 커스터마이징 방법은 **[시작 가이드](docs/GETTING_STARTED_KR.md#7-커스터마이징-가이드)**를 참조하세요.
-
----
-
-## 모니터링
-
-### Grafana 대시보드
-
-```bash
-# Grafana 접속
-kubectl port-forward -n lakehouse-platform svc/observability-grafana 32300:80
-# http://localhost:32300 접속
-# ID: admin, PW: admin (개발 환경)
-```
-
-**기본 제공 대시보드**:
-- Lakehouse Overview (전체 시스템 개요)
-- MinIO Metrics (스토리지 메트릭)
-- Trino Metrics (쿼리 성능)
-- Airflow Metrics (워크플로우 상태)
-
-### 주요 메트릭
-
-- **시스템**: Pod 상태, 리소스 사용량, 네트워크 트래픽
-- **MinIO**: 버킷 사용량, API 요청 수, 에러율
-- **Trino**: 실행 중인 쿼리, 쿼리 성공률, 평균 실행 시간
-- **Airflow**: DAG 실행 상태, Task 성공률, 스케줄러 지연
-
----
-
-## 문제 해결
-
-### Pod가 시작되지 않음
-
-```bash
-# Pod 상태 확인
-kubectl get pods -n lakehouse-platform
-
-# 상세 정보 확인
-kubectl describe pod <pod-name> -n lakehouse-platform
-
-# 로그 확인
-kubectl logs <pod-name> -n lakehouse-platform
-```
-
-### Trino 쿼리 실패
-
-```bash
-# Trino 로그 확인
-kubectl logs -n lakehouse-platform deployment/trino-coordinator
-
-# Trino UI 접속
-kubectl port-forward -n lakehouse-platform svc/trino 31280:8080
-# http://localhost:31280 접속
-```
-
-### MinIO 접속 불가
-
-```bash
-# MinIO Pod 상태
-kubectl get pods -n lakehouse-platform -l app=minio
-
-# 포트 포워딩
-kubectl port-forward -n lakehouse-platform svc/minio 31100:9000
-```
-
-더 많은 문제 해결 방법은 **[운영 가이드](docs/runbook.md#troubleshooting)**를 참조하세요.
-
----
-
-## 운영
-
-### 업그레이드
-
-```bash
-# Git에서 최신 변경사항 가져오기
-git pull origin main
-
-# Dry-run으로 변경사항 확인
-helm upgrade trino ./platform/trino \
-  --namespace lakehouse-platform \
-  --values env/prod/helm-values.yaml \
-  --dry-run --debug
-
-# 실제 업그레이드
-helm upgrade trino ./platform/trino \
-  --namespace lakehouse-platform \
-  --values env/prod/helm-values.yaml \
-  --wait --timeout 10m
-```
-
-### 롤백
-
-```bash
-# Helm 히스토리 확인
-helm history trino -n lakehouse-platform
-
-# 이전 버전으로 롤백
-helm rollback trino -n lakehouse-platform
-```
-
-### 백업
-
-```bash
-# Kubernetes 리소스 백업
-kubectl get all -n lakehouse-platform -o yaml > backup.yaml
-
-# MinIO 데이터 백업
-mc mirror minio/lakehouse-warehouse /backup/lakehouse-warehouse
-```
-
-자세한 운영 절차는 **[운영 가이드](docs/runbook.md)**를 참조하세요.
-
----
-
-## FAQ
-
-### Q: 로컬에서 빠르게 테스트하려면?
-
-```bash
-./scripts/bootstrap.sh dev
-```
-
-### Q: 프로덕션 환경으로 배포하려면?
-
-```bash
-./scripts/bootstrap.sh prod
-```
-
-### Q: MinIO를 AWS S3로 교체하려면?
-
-`env/prod/helm-values.yaml`에서 Iceberg Catalog 설정만 변경하면 됩니다:
-
-```yaml
-icebergCatalog:
-  config:
-    warehouse: s3://my-aws-bucket/lakehouse/
-    s3:
-      endpoint: https://s3.amazonaws.com
-      region: us-east-1
-```
-
-### Q: 전체 플랫폼을 제거하려면?
-
-```bash
-./scripts/cleanup.sh dev
-```
-
-더 많은 FAQ는 **[시작 가이드](docs/GETTING_STARTED_KR.md#10-faq)**를 참조하세요.
-
----
-
-## 기여하기
-
-이 프로젝트에 기여하고 싶으시다면:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### 개발 가이드라인
-
-- 모든 코드는 계약(contracts)을 준수해야 합니다
-- 새로운 기능은 테스트 코드와 함께 제출해야 합니다
-- 문서를 업데이트해야 합니다
+상세한 내용은 **[README.md](README.md)**를 참조하세요.
 
 ---
 
 ## 라이선스
 
-이 프로젝트는 Apache 2.0 라이선스를 따릅니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+Apache 2.0 License - 자세한 내용은 [LICENSE](LICENSE) 파일 참조
 
 ---
 
 ## 감사의 말
 
 이 프로젝트는 다음 오픈소스 프로젝트들을 기반으로 합니다:
-
-- [Apache Iceberg](https://iceberg.apache.org/) - 테이블 포맷
-- [Trino](https://trino.io/) - 분산 SQL 쿼리 엔진
-- [MinIO](https://min.io/) - S3 호환 객체 스토리지
-- [Apache Airflow](https://airflow.apache.org/) - 워크플로우 오케스트레이션
-- [Prometheus](https://prometheus.io/) - 모니터링
-- [Grafana](https://grafana.com/) - 시각화
-- [ArgoCD](https://argoproj.github.io/cd/) - GitOps
-
----
-
-## 연락처
-
-- **이슈**: [GitHub Issues](https://github.com/your-org/lakehouse/issues)
-- **토론**: [GitHub Discussions](https://github.com/your-org/lakehouse/discussions)
-- **이메일**: lakehouse@example.com
-
----
-
-## 추가 리소스
-
-### 공식 문서
-
-- [Apache Iceberg 문서](https://iceberg.apache.org/docs/latest/)
-- [Trino 문서](https://trino.io/docs/current/)
-- [MinIO 문서](https://min.io/docs/minio/kubernetes/upstream/)
-- [Airflow 문서](https://airflow.apache.org/docs/)
-
-### 커뮤니티
-
-- [Iceberg Slack](https://apache-iceberg.slack.com/)
-- [Trino Slack](https://trino.io/slack.html)
-- [Airflow Slack](https://apache-airflow.slack.com/)
+- [Apache Iceberg](https://iceberg.apache.org/)
+- [Trino](https://trino.io/)
+- [MinIO](https://min.io/)
+- [Apache Airflow](https://airflow.apache.org/)
+- [Prometheus](https://prometheus.io/) / [Grafana](https://grafana.com/)
+- [ArgoCD](https://argoproj.github.io/cd/)
 
 ---
 
 **Happy Data Engineering! 🚀**
-
----
 
 <div align="center">
 

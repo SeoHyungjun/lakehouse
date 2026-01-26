@@ -1,8 +1,13 @@
+# Trino Development Environment Configuration
+# Platform defaults: platform/trino/values.yaml
+# Override ONLY environment-specific values
+
 trino:
   server:
+    # Dev coordinator with minimal resources
     coordinator:
       jvm:
-        maxHeapSize: "1G"
+        maxHeapSize: "1G"  # Reduced for dev
       config:
         query:
           max-memory: "1GB"
@@ -10,39 +15,28 @@ trino:
         requests:
           memory: 1Gi
           cpu: 500m
-        limits: {} # Unbounded for dev stability
+        limits: {}  # Unbounded for dev stability
+    
+    # Dev worker with minimal resources
     worker:
       jvm:
-        maxHeapSize: "1G"
+        maxHeapSize: "1G"  # Reduced for dev
       resources:
         requests:
           memory: 1Gi
           cpu: 500m
-        limits: {} # Unbounded for dev stability
+        limits: {}  # Unbounded for dev stability
+  
+  # Override warehouse path for dev environment
   additionalCatalogs:
     iceberg: |
       connector.name=iceberg
       iceberg.catalog.type=rest
-      iceberg.rest-catalog.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
-      iceberg.rest-catalog.warehouse=s3://lakehouse-dev-warehouse/
+      iceberg.rest.uri=http://iceberg-catalog.lakehouse-platform.svc.cluster.local:8181
+      iceberg.rest.warehouse=s3://lakehouse-dev-warehouse/
       fs.native-s3.enabled=true
       s3.endpoint=http://minio.lakehouse-platform.svc.cluster.local:9000
       s3.path-style-access=true
       s3.aws-access-key=${ENV:S3_ACCESS_KEY}
       s3.aws-secret-key=${ENV:S3_SECRET_KEY}
       s3.region=us-east-1
-
-  env:
-    - name: S3_ACCESS_KEY
-      valueFrom:
-        secretKeyRef:
-          name: minio-creds
-          key: accessKeyId
-    - name: S3_SECRET_KEY
-      valueFrom:
-        secretKeyRef:
-          name: minio-creds
-          key: secretAccessKey
-
-  # Disabled in favor of SealedSecret 'minio-creds'
-  secrets: null

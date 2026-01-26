@@ -1,16 +1,8 @@
-image:
-  repository: tabulario/iceberg-rest
-  tag: "1.6.0"
-resources:
-  requests:
-    memory: 512Mi
-    cpu: 250m
-  limits:
-    memory: 1Gi
-    cpu: 500m
+# Iceberg Catalog Staging Environment Configuration
+# Platform defaults: platform/iceberg-catalog/values.yaml
+# Override ONLY environment-specific values
 
+# Staging-specific warehouse bucket (matches MinIO staging bucket)
 catalog:
   warehouse: s3://lakehouse-staging-warehouse/
-  s3:
-    endpoint: http://minio.lakehouse-platform.svc.cluster.local:9000
-    existingSecret: "minio-creds"
+

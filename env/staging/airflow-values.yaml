@@ -1,36 +1,22 @@
-# Staging Environment - Airflow Configuration
-# Used by ArgoCD Application: platform/argocd/templates/airflow-application.yaml
+# Airflow Staging Environment Configuration
+# Platform defaults: platform/airflow/values.yaml
+# Override ONLY environment-specific values
 
 airflow:
-  # Webserver - moderate resources
+  # Staging webserver with HA (2 replicas for availability testing)
   webserver:
-    replicas: 2
-    resources:
-      requests:
-        memory: 512Mi
-        cpu: 250m
-      limits:
-        memory: 1Gi
-        cpu: 500m
+    replicas: 2  # HA configuration
 
-  # Scheduler - moderate resources with HA
+  # Staging scheduler with HA (2 replicas)
   scheduler:
-    replicas: 2
-    resources:
-      requests:
-        memory: 512Mi
-        cpu: 250m
-      limits:
-        memory: 1Gi
-        cpu: 500m
+    replicas: 2  # HA configuration
 
-  # PostgreSQL - moderate resources
+  # PostgreSQL with moderate resources and production-like storage class
   postgresql:
     primary:
       persistence:
-        enabled: true
-        size: 20Gi
-        storageClass: gp3
+        size: 20Gi  # Moderate for staging
+        storageClass: gp3  # Production-like storage class
       resources:
         requests:
           memory: 512Mi
@@ -39,20 +25,16 @@ airflow:
           memory: 1Gi
           cpu: 500m
 
-  # DAGs - moderate persistence with GitSync
+  # GitSync with staging branch
   dags:
-    persistence:
-      enabled: false
-      # size: 5Gi
-
     gitSync:
       enabled: true
       repo: "https://github.com/your-org/lakehouse-workflows.git"
-      branch: staging
+      branch: staging  # Staging-specific branch
       wait: 60
       maxFailures: 3
 
-  # Airflow configuration - staging settings
+  # Staging-specific Airflow configuration
   config:
     core:
       parallelism: 32
@@ -75,9 +57,9 @@ airflow:
 
     logging:
       logging_level: "INFO"
-      remote_logging: "False"
+      remote_logging: "False"  # Disabled for staging
 
-  # Metrics - enabled for staging
+  # Metrics enabled for staging observability
   metrics:
     enabled: true
     serviceMonitor:
@@ -86,7 +68,7 @@ airflow:
       labels:
         environment: staging
 
-  # Ingress - enabled for staging
+  # Ingress enabled for staging access
   ingress:
     enabled: true
     web:
@@ -100,10 +82,9 @@ airflow:
             enabled: true
             secretName: airflow-staging-tls
 
-  # Triggerer - enabled for staging
+  # Triggerer enabled for staging (deferrable operators testing)
   triggerer:
     enabled: true
-    replicas: 1
     resources:
       requests:
         memory: 256Mi
@@ -111,3 +92,4 @@ airflow:
       limits:
         memory: 512Mi
         cpu: 200m
+
